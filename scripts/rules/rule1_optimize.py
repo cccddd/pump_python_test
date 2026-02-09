@@ -586,6 +586,11 @@ original_backtest_mint = pump.backtest_mint
 def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
     """包装的回测函数，用于收集回测结果"""
     trades = original_backtest_mint(mint_name, mint_data)
+    # 调试: 第一次回测时打印交易记录的字段结构
+    if trades and not hasattr(wrapped_backtest_mint, '_debug_printed'):
+        wrapped_backtest_mint._debug_printed = True
+        print(f"\n[DEBUG] 第一笔交易记录字段: {list(trades[0].keys())}")
+        print(f"[DEBUG] 第一笔交易记录内容: {trades[0]}\n")
     result_collector.collect_from_trades(trades)
     return trades
 
@@ -669,12 +674,16 @@ def main():
         # 重置结果收集器
         result_collector.reset()
 
-        # 执行回测（静默模式，抑制输出）
-        import io
-        import contextlib
-        f = io.StringIO()
-        with contextlib.redirect_stdout(f):
+        # 第一组不抑制输出，用于打印DEBUG信息（查看交易记录字段）
+        if idx == 0:
             pump.run_backtest(log_file)
+        else:
+            # 执行回测（静默模式，抑制输出）
+            import io
+            import contextlib
+            f = io.StringIO()
+            with contextlib.redirect_stdout(f):
+                pump.run_backtest(log_file)
 
         # 获取结果
         summary = result_collector.get_summary()
