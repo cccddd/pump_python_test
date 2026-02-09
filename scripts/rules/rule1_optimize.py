@@ -909,286 +909,262 @@ def main():
     print("=" * 80)
 
     overall_start = time.time()
-    
-    # 所有轮次的结果汇总
-    all_round_results = []
-    max_rounds = 3  # 最多循环3轮防止死循环
-    final_round = 0
 
-    for round_num in range(1, max_rounds + 1):
-        final_round = round_num
-        print(f"\n{'#' * 80}")
-        print(f"第 {round_num} 轮优化")
-        print(f"{'#' * 80}")
+    # =====================================================================
+    # STEP 2: 基础参数组合回测
+    # =====================================================================
+    print("\n" + "=" * 80)
+    print("STEP 2: 基础参数组合回测")
+    print("=" * 80)
 
-        # =====================================================================
-        # STEP 2: 基础参数组合回测
-        # =====================================================================
+    param_combinations = generate_param_combinations()
+    total_combinations = len(param_combinations)
+    print(f"\n总参数组合数: {total_combinations}")
+    print(f"\n搜索空间:")
+    for key, values in PARAM_SEARCH_SPACE.items():
+        print(f"  {key}: {values}")
+
+    step2_all_results = []
+    step2_start = time.time()
+
+    for idx, params in enumerate(param_combinations):
+        combo_start = time.time()
+        result = run_single_backtest(params, log_file, silent=True)
+        result['time'] = time.time() - combo_start
+        step2_all_results.append(result)
+
+        s = result['summary']
+        tag = ""
+        if meets_full_criteria(s):
+            tag = "✅ 满足全部条件"
+        print_result_line(idx + 1, total_combinations, result, tag)
+
+    step2_time = time.time() - step2_start
+    print(f"\nStep2完成, 耗时: {step2_time:.1f}s")
+
+    # =====================================================================
+    # STEP 3: 判断是否已有满足条件的组合
+    # =====================================================================
+    print("\n" + "=" * 80)
+    print("STEP 3: 判断是否已有满足全部条件的组合")
+    print(f"  条件: 盈利数>{FILTER_THRESHOLDS['MIN_PROFITABLE_TRADES']}, "
+          f"总盈利>{FILTER_THRESHOLDS['MIN_TOTAL_PROFIT_SOL']}SOL, "
+          f"胜率>{FILTER_THRESHOLDS['MIN_WIN_RATE']*100:.0f}%, "
+          f"平均盈利率>{FILTER_THRESHOLDS['MIN_AVG_PROFIT_RATE']*100:.1f}%")
+    print("=" * 80)
+
+    step3_qualified = [r for r in step2_all_results if meets_full_criteria(r['summary'])]
+
+    if step3_qualified:
+        step3_qualified.sort(key=lambda x: x['summary']['total_profit_sol'], reverse=True)
+        print(f"\n  ✅ 找到 {len(step3_qualified)} 个满足全部条件的组合，跳过Step4，直接进入Step5")
+        final_results = step3_qualified + step2_all_results
+        final_step = "Step3(直接满足)"
+    else:
+        print(f"\n  ⚠️ 没有满足全部条件的组合 → 进入Step4")
+
+        # =================================================================
+        # STEP 4: 分析TIME_DIFF debug分桶 → 提取盈利桶 → 设为online再回测
+        # =================================================================
         print("\n" + "=" * 80)
-        print(f"STEP 2 (轮次{round_num}): 基础参数组合回测")
+        print("STEP 4: 分析TIME_DIFF分桶数据 → 提取盈利范围 → 再回测")
         print("=" * 80)
 
-        param_combinations = generate_param_combinations()
-        total_combinations = len(param_combinations)
-        print(f"\n总参数组合数: {total_combinations}")
-        print(f"\n搜索空间:")
-        for key, values in PARAM_SEARCH_SPACE.items():
-            print(f"  {key}: {values}")
+        step4_results = []
+        step4_total = 0
 
-        step2_all_results = []
-        step2_start = time.time()
+        for cand_idx, candidate in enumerate(step2_all_results):
+            snapshot = candidate['debug_snapshot']
+            base_params = candidate['params']
+            s = candidate['summary']
 
-        for idx, params in enumerate(param_combinations):
-            combo_start = time.time()
-            result = run_single_backtest(params, log_file, silent=True)
-            result['time'] = time.time() - combo_start
-            result['round'] = round_num
-            step2_all_results.append(result)
+            print(f"\n  {'─' * 60}")
+            print(f"  组合 #{cand_idx+1}: {format_params(base_params)}")
+            print(f"  基础结果: 交易:{s['total_trades']} 盈利:{s['profitable_trades']} "
+                  f"胜率:{s['win_rate']*100:.2f}% 总盈利:{s['total_profit_sol']:.2f}SOL "
+                  f"平均:{s['avg_profit_rate']*100:.2f}%")
 
-            s = result['summary']
-            tag = ""
-            if meets_full_criteria(s):
-                tag = "✅ 满足全部条件"
-            print_result_line(idx + 1, total_combinations, result, tag)
+            # 检查 TIME_DIFF 的 debug 数据
+            if 'TIME_DIFF' not in snapshot:
+                print(f"  ⚠️ 无TIME_DIFF debug数据，跳过")
+                if snapshot:
+                    print(f"    (snapshot包含: {list(snapshot.keys())})")
+                else:
+                    print(f"    (snapshot为空，debug指标可能未注入到交易记录中)")
+                continue
 
-        step2_time = time.time() - step2_start
-        print(f"\nStep2完成, 耗时: {step2_time:.1f}s")
-        all_round_results.extend(step2_all_results)
-
-        # =====================================================================
-        # STEP 3: 判断是否已有满足条件的组合
-        # =====================================================================
-        print("\n" + "=" * 80)
-        print(f"STEP 3 (轮次{round_num}): 判断是否已有满足全部条件的组合")
-        print(f"  条件: 盈利数>{FILTER_THRESHOLDS['MIN_PROFITABLE_TRADES']}, "
-              f"总盈利>{FILTER_THRESHOLDS['MIN_TOTAL_PROFIT_SOL']}SOL, "
-              f"胜率>{FILTER_THRESHOLDS['MIN_WIN_RATE']*100:.0f}%, "
-              f"平均盈利率>{FILTER_THRESHOLDS['MIN_AVG_PROFIT_RATE']*100:.1f}%")
-        print("=" * 80)
-
-        step3_qualified = [r for r in step2_all_results if meets_full_criteria(r['summary'])]
-
-        if step3_qualified:
-            step3_qualified.sort(key=lambda x: x['summary']['total_profit_sol'], reverse=True)
-            print(f"\n  ✅ 找到 {len(step3_qualified)} 个满足全部条件的组合，跳过Step4，直接进入Step5")
-            final_results = step3_qualified + step2_all_results
-            final_step = "Step3(直接满足)"
-        else:
-            print(f"\n  ⚠️ 没有满足全部条件的组合 → 进入Step4")
-
-            # =================================================================
-            # STEP 4: 分析TIME_DIFF debug分桶 → 提取盈利桶 → 设为online再回测
-            # =================================================================
-            print("\n" + "=" * 80)
-            print(f"STEP 4 (轮次{round_num}): 分析TIME_DIFF分桶数据 → 提取盈利范围 → 再回测")
-            print("=" * 80)
-
-            step4_results = []
-            step4_total = 0
-
-            for cand_idx, candidate in enumerate(step2_all_results):
-                snapshot = candidate['debug_snapshot']
-                base_params = candidate['params']
-                s = candidate['summary']
-
-                print(f"\n  {'─' * 60}")
-                print(f"  组合 #{cand_idx+1}: {format_params(base_params)}")
-                print(f"  基础结果: 交易:{s['total_trades']} 盈利:{s['profitable_trades']} "
-                      f"胜率:{s['win_rate']*100:.2f}% 总盈利:{s['total_profit_sol']:.2f}SOL "
-                      f"平均:{s['avg_profit_rate']*100:.2f}%")
-
-                # 检查 TIME_DIFF 的 debug 数据
-                if 'TIME_DIFF' not in snapshot:
-                    print(f"  ⚠️ 无TIME_DIFF debug数据，跳过")
-                    if snapshot:
-                        print(f"    (snapshot包含: {list(snapshot.keys())})")
-                    else:
-                        print(f"    (snapshot为空，debug指标可能未注入到交易记录中)")
+            td_data = snapshot['TIME_DIFF']
+            print(f"\n  TIME_DIFF 分桶数据:")
+            for bs in td_data['bucket_stats']:
+                if bs['count'] == 0:
                     continue
+                print(f"    {bs['name']}: {bs['count']}笔 | "
+                      f"盈利: {bs['profitable']} ({bs['win_rate']*100:.1f}%) | "
+                      f"平均盈利率: {bs['avg_profit_rate']*100:.2f}%")
 
-                td_data = snapshot['TIME_DIFF']
-                print(f"\n  TIME_DIFF 分桶数据:")
-                for bs in td_data['bucket_stats']:
-                    if bs['count'] == 0:
-                        continue
-                    print(f"    {bs['name']}: {bs['count']}笔 | "
+            # 找出平均盈利率 > -0.1% 的分桶
+            profitable_buckets = [bs for bs in td_data['bucket_stats']
+                                  if bs['count'] > 0 and bs['avg_profit_rate'] > -0.001]
+            if not profitable_buckets:
+                print(f"  ⚠️ 无平均盈利率>-0.1%的分桶，跳过")
+                continue
+
+            total_hits = sum(bs['count'] for bs in profitable_buckets)
+            print(f"\n  盈利分桶: {len(profitable_buckets)} 个, 命中总数: {total_hits}")
+
+            if total_hits < 300:
+                print(f"  ⚠️ 命中总数 {total_hits} < 300，跳过")
+                continue
+
+            # 提取范围
+            range_min = min(bs['low'] for bs in profitable_buckets)
+            range_max = max(bs['high'] for bs in profitable_buckets)
+            if range_max == float('inf'):
+                all_highs = [bs['high'] for bs in profitable_buckets if bs['high'] != float('inf')]
+                range_max = max(all_highs) if all_highs else (td_data['buckets'][-1] * 2)
+
+            new_range = (range_min, range_max)
+            print(f"  → 提取TIME_DIFF盈利范围: {new_range}")
+            print(f"  → 设置 TIME_DIFF_CHECK_MODE='online', TIME_DIFF_FROM_LAST_TRADE_RANGE={new_range}")
+
+            # 构建新参数
+            new_params = copy.deepcopy(base_params)
+            new_params['TIME_DIFF_CHECK_MODE'] = 'online'
+            new_params['TIME_DIFF_FROM_LAST_TRADE_RANGE'] = new_range
+
+            print(f"  → 开始回测...")
+            step4_total += 1
+            result = run_single_backtest(new_params, log_file, silent=True)
+            result['time'] = time.time() - overall_start
+            result['source_candidate'] = cand_idx
+            result['optimized_condition'] = 'TIME_DIFF'
+            result['optimized_range'] = new_range
+            step4_results.append(result)
+
+            rs = result['summary']
+            tag = "✅ 满足全部条件" if meets_full_criteria(rs) else ""
+            print_result_line(step4_total, len(step2_all_results), result, tag)
+
+        print(f"\n  Step4完成, 共{step4_total}次回测")
+
+        # 合并所有结果
+        final_results = step4_results + step2_all_results
+        final_step = "Step4"
+
+    # =====================================================================
+    # STEP 5: 筛选并打印最终结果
+    # =====================================================================
+    print("\n" + "=" * 80)
+    print(f"STEP 5: 最终结果筛选与输出 (来源: {final_step})")
+    print(f"  筛选条件: 盈利单数>{STEP5_THRESHOLDS['MIN_PROFITABLE_TRADES']}, "
+          f"平均盈利率>{STEP5_THRESHOLDS['MIN_AVG_PROFIT_RATE']*100:.1f}%, "
+          f"胜率>{STEP5_THRESHOLDS['MIN_WIN_RATE']*100:.0f}%")
+    print("=" * 80)
+
+    # 按step5条件筛选
+    step5_qualified = []
+    for r in final_results:
+        s = r['summary']
+        if (s['profitable_trades'] > STEP5_THRESHOLDS['MIN_PROFITABLE_TRADES'] and
+            s['avg_profit_rate'] > STEP5_THRESHOLDS['MIN_AVG_PROFIT_RATE'] and
+            s['win_rate'] > STEP5_THRESHOLDS['MIN_WIN_RATE']):
+            step5_qualified.append(r)
+
+    # 去重 (按params字符串去重)
+    seen = set()
+    unique_qualified = []
+    for r in step5_qualified:
+        key = json.dumps(r['params'], sort_keys=True, default=str)
+        if key not in seen:
+            seen.add(key)
+            unique_qualified.append(r)
+    step5_qualified = sorted(unique_qualified, key=lambda x: x['summary']['avg_profit_rate'], reverse=True)
+
+    if not step5_qualified:
+        print(f"\n  ⚠️ 没有满足Step5条件的组合，取所有结果中最优的")
+        all_sorted = sorted(final_results, key=lambda x: x['summary']['avg_profit_rate'], reverse=True)
+        seen2 = set()
+        for r in all_sorted[:5]:
+            key = json.dumps(r['params'], sort_keys=True, default=str)
+            if key not in seen2:
+                seen2.add(key)
+                step5_qualified.append(r)
+        print(f"  取平均盈利率最高的 {len(step5_qualified)} 个组合:")
+
+    # 打印结果
+    print(f"\n  满足条件的组合: {len(step5_qualified)} 个")
+    print(f"\n  {'─' * 100}")
+    print(f"  {'排名':<4} {'交易数':<8} {'盈利数':<8} {'胜率':<8} {'总盈利(SOL)':<14} {'平均盈利率':<12} {'参数'}")
+    print(f"  {'─' * 100}")
+
+    for rank, result in enumerate(step5_qualified, 1):
+        s = result['summary']
+        params_str = format_params(result['params'])
+        opt = f" [优化:{result['optimized_condition']}]" if 'optimized_condition' in result else ""
+        print(f"  #{rank:<3} {s['total_trades']:<8} {s['profitable_trades']:<8} "
+              f"{s['win_rate']*100:<7.2f}% {s['total_profit_sol']:<13.2f} "
+              f"{s['avg_profit_rate']*100:<11.2f}% {params_str}{opt}")
+
+    # 详细输出每个满足条件的组合 + debug 盈利分桶
+    for rank, result in enumerate(step5_qualified, 1):
+        s = result['summary']
+        p = result['params']
+        print(f"\n{'=' * 80}")
+        print(f"组合 #{rank} 详细信息")
+        print(f"{'=' * 80}")
+        print(f"  交易数: {s['total_trades']}")
+        print(f"  盈利交易数: {s['profitable_trades']}")
+        print(f"  胜率: {s['win_rate']*100:.2f}%")
+        print(f"  总盈利: {s['total_profit_sol']:.2f} SOL")
+        print(f"  平均盈利率: {s['avg_profit_rate']*100:.2f}%")
+
+        if 'optimized_condition' in result:
+            print(f"  优化条件: {result['optimized_condition']}")
+            print(f"  优化范围: {result['optimized_range']}")
+
+        print(f"\n  参数配置:")
+        for key, value in p.items():
+            print(f"    {key}: {value}")
+
+        # 打印debug模式下 平均盈利率>0% 且命中数>50 的分桶
+        snapshot = result.get('debug_snapshot', {})
+        if snapshot:
+            print(f"\n  {'─' * 70}")
+            print(f"  debug模式下盈利分桶 (平均盈利率>0.0% 且 命中数>50):")
+            print(f"  {'─' * 70}")
+            found_any = False
+            for cond_name, data in snapshot.items():
+                good_buckets = [bs for bs in data['bucket_stats']
+                                if bs['count'] > 50 and bs['avg_profit_rate'] > 0.0]
+                if not good_buckets:
+                    continue
+                found_any = True
+                print(f"\n    【{cond_name}】 总记录数: {data['total_records']}")
+                for bs in good_buckets:
+                    print(f"      {bs['name']}: {bs['count']}笔 | "
                           f"盈利: {bs['profitable']} ({bs['win_rate']*100:.1f}%) | "
                           f"平均盈利率: {bs['avg_profit_rate']*100:.2f}%")
+            if not found_any:
+                print(f"    (无满足条件的分桶)")
 
-                # 找出平均盈利率 > -0.1% 的分桶
-                profitable_buckets = [bs for bs in td_data['bucket_stats']
-                                      if bs['count'] > 0 and bs['avg_profit_rate'] > -0.001]
-                if not profitable_buckets:
-                    print(f"  ⚠️ 无平均盈利率>-0.1%的分桶，跳过")
-                    continue
-
-                total_hits = sum(bs['count'] for bs in profitable_buckets)
-                print(f"\n  盈利分桶: {len(profitable_buckets)} 个, 命中总数: {total_hits}")
-
-                if total_hits < 300:
-                    print(f"  ⚠️ 命中总数 {total_hits} < 300，跳过")
-                    continue
-
-                # 提取范围
-                range_min = min(bs['low'] for bs in profitable_buckets)
-                range_max = max(bs['high'] for bs in profitable_buckets)
-                if range_max == float('inf'):
-                    all_highs = [bs['high'] for bs in profitable_buckets if bs['high'] != float('inf')]
-                    range_max = max(all_highs) if all_highs else (td_data['buckets'][-1] * 2)
-
-                new_range = (range_min, range_max)
-                print(f"  → 提取TIME_DIFF盈利范围: {new_range}")
-                print(f"  → 设置 TIME_DIFF_CHECK_MODE='online', TIME_DIFF_FROM_LAST_TRADE_RANGE={new_range}")
-
-                # 构建新参数
-                new_params = copy.deepcopy(base_params)
-                new_params['TIME_DIFF_CHECK_MODE'] = 'online'
-                new_params['TIME_DIFF_FROM_LAST_TRADE_RANGE'] = new_range
-
-                print(f"  → 开始回测...")
-                step4_total += 1
-                result = run_single_backtest(new_params, log_file, silent=True)
-                result['time'] = time.time() - overall_start
-                result['source_candidate'] = cand_idx
-                result['optimized_condition'] = 'TIME_DIFF'
-                result['optimized_range'] = new_range
-                result['round'] = round_num
-                step4_results.append(result)
-
-                rs = result['summary']
-                tag = "✅ 满足全部条件" if meets_full_criteria(rs) else ""
-                print_result_line(step4_total, len(step2_all_results), result, tag)
-
-            print(f"\n  Step4完成, 共{step4_total}次回测")
-            all_round_results.extend(step4_results)
-
-            # 合并所有结果
-            final_results = step4_results + step2_all_results
-            final_step = "Step4"
-
-        # =====================================================================
-        # STEP 5: 筛选并打印最终结果
-        # =====================================================================
-        print("\n" + "=" * 80)
-        print(f"STEP 5 (轮次{round_num}): 最终结果筛选与输出 (来源: {final_step})")
-        print(f"  筛选条件: 盈利单数>{STEP5_THRESHOLDS['MIN_PROFITABLE_TRADES']}, "
-              f"平均盈利率>{STEP5_THRESHOLDS['MIN_AVG_PROFIT_RATE']*100:.1f}%, "
-              f"胜率>{STEP5_THRESHOLDS['MIN_WIN_RATE']*100:.0f}%")
-        print("=" * 80)
-
-        # 按step5条件筛选
-        step5_qualified = []
-        for r in final_results:
-            s = r['summary']
-            if (s['profitable_trades'] > STEP5_THRESHOLDS['MIN_PROFITABLE_TRADES'] and
-                s['avg_profit_rate'] > STEP5_THRESHOLDS['MIN_AVG_PROFIT_RATE'] and
-                s['win_rate'] > STEP5_THRESHOLDS['MIN_WIN_RATE']):
-                step5_qualified.append(r)
-
-        # 去重 (按params字符串去重)
-        seen = set()
-        unique_qualified = []
-        for r in step5_qualified:
-            key = json.dumps(r['params'], sort_keys=True, default=str)
-            if key not in seen:
-                seen.add(key)
-                unique_qualified.append(r)
-        step5_qualified = sorted(unique_qualified, key=lambda x: x['summary']['avg_profit_rate'], reverse=True)
-
-        if not step5_qualified:
-            print(f"\n  ⚠️ 没有满足Step5条件的组合")
-            if round_num < max_rounds:
-                print(f"  → 回到Step2进行第 {round_num+1} 轮优化")
-                continue  # 回到step2
+    # 输出最佳配置
+    if step5_qualified:
+        best = step5_qualified[0]
+        print(f"\n{'=' * 80}")
+        print(f"最佳配置 (可直接复制到 BUY_CONDITIONS_CONFIG):")
+        print(f"{'=' * 80}")
+        best_config = build_config(best['params'])
+        print("BUY_CONDITIONS_CONFIG = {")
+        for key, value in best_config.items():
+            if isinstance(value, str):
+                print(f"    '{key}': '{value}',")
             else:
-                print(f"  已达最大轮次({max_rounds})，取所有结果中最优的")
-                all_sorted = sorted(all_round_results, key=lambda x: x['summary']['avg_profit_rate'], reverse=True)
-                seen2 = set()
-                for r in all_sorted[:5]:
-                    key = json.dumps(r['params'], sort_keys=True, default=str)
-                    if key not in seen2:
-                        seen2.add(key)
-                        step5_qualified.append(r)
-                print(f"  取平均盈利率最高的 {len(step5_qualified)} 个组合:")
-
-        # 打印结果
-        print(f"\n  满足条件的组合: {len(step5_qualified)} 个")
-        print(f"\n  {'─' * 100}")
-        print(f"  {'排名':<4} {'交易数':<8} {'盈利数':<8} {'胜率':<8} {'总盈利(SOL)':<14} {'平均盈利率':<12} {'参数'}")
-        print(f"  {'─' * 100}")
-
-        for rank, result in enumerate(step5_qualified, 1):
-            s = result['summary']
-            params_str = format_params(result['params'])
-            opt = f" [优化:{result['optimized_condition']}]" if 'optimized_condition' in result else ""
-            print(f"  #{rank:<3} {s['total_trades']:<8} {s['profitable_trades']:<8} "
-                  f"{s['win_rate']*100:<7.2f}% {s['total_profit_sol']:<13.2f} "
-                  f"{s['avg_profit_rate']*100:<11.2f}% {params_str}{opt}")
-
-        # 详细输出每个满足条件的组合 + debug 盈利分桶
-        for rank, result in enumerate(step5_qualified, 1):
-            s = result['summary']
-            p = result['params']
-            print(f"\n{'=' * 80}")
-            print(f"组合 #{rank} 详细信息")
-            print(f"{'=' * 80}")
-            print(f"  交易数: {s['total_trades']}")
-            print(f"  盈利交易数: {s['profitable_trades']}")
-            print(f"  胜率: {s['win_rate']*100:.2f}%")
-            print(f"  总盈利: {s['total_profit_sol']:.2f} SOL")
-            print(f"  平均盈利率: {s['avg_profit_rate']*100:.2f}%")
-
-            if 'optimized_condition' in result:
-                print(f"  优化条件: {result['optimized_condition']}")
-                print(f"  优化范围: {result['optimized_range']}")
-
-            print(f"\n  参数配置:")
-            for key, value in p.items():
-                print(f"    {key}: {value}")
-
-            # 打印debug模式下 平均盈利率>0% 且命中数>50 的分桶
-            snapshot = result.get('debug_snapshot', {})
-            if snapshot:
-                print(f"\n  {'─' * 70}")
-                print(f"  debug模式下盈利分桶 (平均盈利率>0.0% 且 命中数>50):")
-                print(f"  {'─' * 70}")
-                found_any = False
-                for cond_name, data in snapshot.items():
-                    good_buckets = [bs for bs in data['bucket_stats']
-                                    if bs['count'] > 50 and bs['avg_profit_rate'] > 0.0]
-                    if not good_buckets:
-                        continue
-                    found_any = True
-                    print(f"\n    【{cond_name}】 总记录数: {data['total_records']}")
-                    for bs in good_buckets:
-                        print(f"      {bs['name']}: {bs['count']}笔 | "
-                              f"盈利: {bs['profitable']} ({bs['win_rate']*100:.1f}%) | "
-                              f"平均盈利率: {bs['avg_profit_rate']*100:.2f}%")
-                if not found_any:
-                    print(f"    (无满足条件的分桶)")
-
-        # 输出最佳配置
-        if step5_qualified:
-            best = step5_qualified[0]
-            print(f"\n{'=' * 80}")
-            print(f"最佳配置 (可直接复制到 BUY_CONDITIONS_CONFIG):")
-            print(f"{'=' * 80}")
-            best_config = build_config(best['params'])
-            print("BUY_CONDITIONS_CONFIG = {")
-            for key, value in best_config.items():
-                if isinstance(value, str):
-                    print(f"    '{key}': '{value}',")
-                else:
-                    print(f"    '{key}': {value},")
-            print("}")
-
-        # 如果有满足条件的组合，跳出循环
-        if step5_qualified:
-            break
+                print(f"    '{key}': {value},")
+        print("}")
 
     overall_time = time.time() - overall_start
     print(f"\n{'=' * 80}")
-    print(f"优化完成! 总耗时: {overall_time:.1f}s, 共{final_round}轮")
+    print(f"优化完成! 总耗时: {overall_time:.1f}s")
     print(f"{'=' * 80}")
 
 
