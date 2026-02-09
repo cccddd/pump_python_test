@@ -11,9 +11,9 @@ STRATEGY_CONFIG = pump.STRATEGY_CONFIG
 # =============================================================================
 BUY_CONDITIONS_CONFIG = {
     # 条件1: 距离创币时间（分钟）
-    'TIME_FROM_CREATION_MINUTES': 5,  # 距离创币时间 >= 5 分钟
+    'TIME_FROM_CREATION_MINUTES': 2,  # 距离创币时间 >= 5 分钟
     # 条件2: 当前市值范围（nowsol字段）
-    'NOWSOL_RANGE': (5, 35),  # nowsol 在 [5, 35] 范围内
+    'NOWSOL_RANGE': (5, 15),  # nowsol 在 [5, 35] 范围内
 
     # 条件3: 当前交易单金额范围
     'TRADE_AMOUNT_RANGE': (0.3, 2.0),  # 交易金额绝对值在 [0.5, 2.0] 范围内
