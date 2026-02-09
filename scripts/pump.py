@@ -349,7 +349,7 @@ def backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
 
 
 def run_backtest(log_file_path: str = '/Users/xcold/Desktop/mint_temp.log'):
-    """运行回测
+    """运行回测1
     
     Args:
         log_file_path: mint交易信息日志文件路径，默认为 /Users/xcold/Desktop/mint_temp.log
@@ -385,7 +385,7 @@ def run_backtest(log_file_path: str = '/Users/xcold/Desktop/mint_temp.log'):
     
     # 过滤掉盈利率大于100%的交易，用于最终盈利计算
     filtered_trades = [t for t in all_trades if t['profit_rate'] <= 2.0]  # 1.0 = 100%
-    excluded_trades = [t for t in all_trades if t['profit_rate'] > 1.0]
+    excluded_trades = [t for t in all_trades if t['profit_rate'] > 3.0]
     
     profitable_trades = [t for t in all_trades if t['is_profitable']]
     win_rate = len(profitable_trades) / total_trades
@@ -499,7 +499,7 @@ def run_backtest(log_file_path: str = '/Users/xcold/Desktop/mint_temp.log'):
 
 if __name__ == "__main__":
     # 从命令行参数获取日志文件路径，否则使用默认路径
-    log_file = '/Users/xcold/Desktop/mint_temp.log'
+    log_file = '/Users/xcold/Desktop/js_log_mint_0209.log'
     
     if len(sys.argv) > 1:
         log_file = sys.argv[1]
