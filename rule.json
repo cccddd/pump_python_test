@@ -1,0 +1,1583 @@
+[
+  {
+    "params": {
+      "TIME_FROM_CREATION_MINUTES": 3,
+      "NOWSOL_RANGE": [
+        5,
+        15
+      ],
+      "TRADE_AMOUNT_RANGE": [
+        0.3,
+        2.0
+      ],
+      "TIME_DIFF_CHECK_MODE": "online",
+      "FILTERED_TRADES_MIN_AMOUNT": 0.2,
+      "FILTERED_TRADES_COUNT": 7,
+      "FILTERED_TRADES_SUM_RANGE": [
+        -6.0,
+        -2.0
+      ],
+      "TRADE_TYPE": "buy",
+      "MAX_AMOUNT_CHECK_MODE": "debug",
+      "PRICE_VOLATILITY_CHECK_MODE": "debug",
+      "TIME_VOLATILITY_CHECK_MODE": "debug",
+      "AMOUNT_VOLATILITY_CHECK_MODE": "debug",
+      "PRICE_RATIO_CHECK_MODE": "debug",
+      "SELL_COUNT_CHECK_MODE": "debug",
+      "BUY_COUNT_CHECK_MODE": "debug",
+      "TIME_DIFF_FROM_LAST_TRADE_RANGE": [
+        2000,
+        1000000000.0
+      ]
+    },
+    "conditions": [
+      {
+        "condition": "PRICE_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.02, 0.05)",
+            "low": 0.02,
+            "high": 0.05,
+            "count": 156,
+            "profitable": 50,
+            "avg_profit_rate": 0.020662886198686736,
+            "win_rate": 0.32051282051282054
+          },
+          {
+            "name": "[0.05, 0.1)",
+            "low": 0.05,
+            "high": 0.1,
+            "count": 718,
+            "profitable": 232,
+            "avg_profit_rate": 0.0005366184612410453,
+            "win_rate": 0.3231197771587744
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 274,
+            "profitable": 87,
+            "avg_profit_rate": 0.012523662762666837,
+            "win_rate": 0.3175182481751825
+          }
+        ]
+      },
+      {
+        "condition": "TIME_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.7, 1.0)",
+            "low": 0.7,
+            "high": 1.0,
+            "count": 96,
+            "profitable": 30,
+            "avg_profit_rate": 0.002756425016472837,
+            "win_rate": 0.3125
+          },
+          {
+            "name": "[1.5, 2.0)",
+            "low": 1.5,
+            "high": 2.0,
+            "count": 359,
+            "profitable": 134,
+            "avg_profit_rate": 0.01673911373431581,
+            "win_rate": 0.3732590529247911
+          },
+          {
+            "name": "[2.0, 5.0)",
+            "low": 2.0,
+            "high": 5.0,
+            "count": 299,
+            "profitable": 88,
+            "avg_profit_rate": 0.010862699916706188,
+            "win_rate": 0.29431438127090304
+          }
+        ]
+      },
+      {
+        "condition": "AMOUNT_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.2, 0.5)",
+            "low": 0.2,
+            "high": 0.5,
+            "count": 121,
+            "profitable": 39,
+            "avg_profit_rate": 0.001657741589846808,
+            "win_rate": 0.32231404958677684
+          },
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 351,
+            "profitable": 110,
+            "avg_profit_rate": 0.011975151543184332,
+            "win_rate": 0.31339031339031337
+          },
+          {
+            "name": "[0.7, 1.0)",
+            "low": 0.7,
+            "high": 1.0,
+            "count": 543,
+            "profitable": 174,
+            "avg_profit_rate": 0.0016912096056571112,
+            "win_rate": 0.32044198895027626
+          },
+          {
+            "name": "[1.0, 1.5)",
+            "low": 1.0,
+            "high": 1.5,
+            "count": 122,
+            "profitable": 39,
+            "avg_profit_rate": 0.0019295952384029394,
+            "win_rate": 0.319672131147541
+          }
+        ]
+      },
+      {
+        "condition": "PRICE_RATIO",
+        "buckets": [
+          {
+            "name": "[3.0, 5.0)",
+            "low": 3.0,
+            "high": 5.0,
+            "count": 255,
+            "profitable": 88,
+            "avg_profit_rate": 0.005424258597562409,
+            "win_rate": 0.34509803921568627
+          },
+          {
+            "name": "[5.0, 10.0)",
+            "low": 5.0,
+            "high": 10.0,
+            "count": 510,
+            "profitable": 177,
+            "avg_profit_rate": 0.014257052172029518,
+            "win_rate": 0.34705882352941175
+          },
+          {
+            "name": "[10.0, 20.0)",
+            "low": 10.0,
+            "high": 20.0,
+            "count": 116,
+            "profitable": 36,
+            "avg_profit_rate": 0.009962848216718763,
+            "win_rate": 0.3103448275862069
+          }
+        ]
+      },
+      {
+        "condition": "BUY_COUNT",
+        "buckets": [
+          {
+            "name": "[0, 2)",
+            "low": 0,
+            "high": 2,
+            "count": 160,
+            "profitable": 48,
+            "avg_profit_rate": 0.00958439128962774,
+            "win_rate": 0.3
+          },
+          {
+            "name": "[2, 4)",
+            "low": 2,
+            "high": 4,
+            "count": 219,
+            "profitable": 80,
+            "avg_profit_rate": 0.01805112603429652,
+            "win_rate": 0.365296803652968
+          },
+          {
+            "name": "[8, 10)",
+            "low": 8,
+            "high": 10,
+            "count": 169,
+            "profitable": 54,
+            "avg_profit_rate": 0.018703083507299916,
+            "win_rate": 0.31952662721893493
+          }
+        ]
+      },
+      {
+        "condition": "SELL_COUNT",
+        "buckets": [
+          {
+            "name": "[6, 8)",
+            "low": 6,
+            "high": 8,
+            "count": 169,
+            "profitable": 54,
+            "avg_profit_rate": 0.018703083507299916,
+            "win_rate": 0.31952662721893493
+          },
+          {
+            "name": "[12, 15)",
+            "low": 12,
+            "high": 15,
+            "count": 310,
+            "profitable": 101,
+            "avg_profit_rate": 0.010487790192290033,
+            "win_rate": 0.3258064516129032
+          },
+          {
+            "name": "[15, +∞)",
+            "low": 15,
+            "high": 1000000000.0,
+            "count": 68,
+            "profitable": 27,
+            "avg_profit_rate": 0.033254325203087735,
+            "win_rate": 0.39705882352941174
+          }
+        ]
+      },
+      {
+        "condition": "LARGE_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.05)",
+            "low": 0.0,
+            "high": 0.05,
+            "count": 206,
+            "profitable": 67,
+            "avg_profit_rate": 0.008930041281907952,
+            "win_rate": 0.32524271844660196
+          },
+          {
+            "name": "[0.05, 0.1)",
+            "low": 0.05,
+            "high": 0.1,
+            "count": 291,
+            "profitable": 95,
+            "avg_profit_rate": 0.0050802252972367914,
+            "win_rate": 0.32646048109965636
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 445,
+            "profitable": 150,
+            "avg_profit_rate": 0.009158266507563587,
+            "win_rate": 0.33707865168539325
+          }
+        ]
+      },
+      {
+        "condition": "SMALL_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 229,
+            "profitable": 77,
+            "avg_profit_rate": 0.0037355069146924676,
+            "win_rate": 0.33624454148471616
+          },
+          {
+            "name": "[0.2, 0.3)",
+            "low": 0.2,
+            "high": 0.3,
+            "count": 267,
+            "profitable": 104,
+            "avg_profit_rate": 0.005799169615242799,
+            "win_rate": 0.3895131086142322
+          },
+          {
+            "name": "[0.3, 0.5)",
+            "low": 0.3,
+            "high": 0.5,
+            "count": 367,
+            "profitable": 109,
+            "avg_profit_rate": 0.00654157934665333,
+            "win_rate": 0.2970027247956403
+          },
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 140,
+            "profitable": 43,
+            "avg_profit_rate": 0.013329563121741486,
+            "win_rate": 0.30714285714285716
+          },
+          {
+            "name": "[0.7, 1.0)",
+            "low": 0.7,
+            "high": 1.0,
+            "count": 59,
+            "profitable": 12,
+            "avg_profit_rate": 0.005370260686157278,
+            "win_rate": 0.2033898305084746
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_BUY",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 1108,
+            "profitable": 356,
+            "avg_profit_rate": 0.006253913825899276,
+            "win_rate": 0.3212996389891697
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_SELL",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 844,
+            "profitable": 269,
+            "avg_profit_rate": 0.005342383019847849,
+            "win_rate": 0.3187203791469194
+          },
+          {
+            "name": "[2, 3)",
+            "low": 2,
+            "high": 3,
+            "count": 68,
+            "profitable": 19,
+            "avg_profit_rate": 0.0127783917448612,
+            "win_rate": 0.27941176470588236
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "params": {
+      "TIME_FROM_CREATION_MINUTES": 3,
+      "NOWSOL_RANGE": [
+        5,
+        15
+      ],
+      "TRADE_AMOUNT_RANGE": [
+        0.3,
+        2.0
+      ],
+      "TIME_DIFF_CHECK_MODE": "online",
+      "FILTERED_TRADES_MIN_AMOUNT": 0.05,
+      "FILTERED_TRADES_COUNT": 7,
+      "FILTERED_TRADES_SUM_RANGE": [
+        -4.0,
+        -2.0
+      ],
+      "TRADE_TYPE": "buy",
+      "MAX_AMOUNT_CHECK_MODE": "debug",
+      "PRICE_VOLATILITY_CHECK_MODE": "debug",
+      "TIME_VOLATILITY_CHECK_MODE": "debug",
+      "AMOUNT_VOLATILITY_CHECK_MODE": "debug",
+      "PRICE_RATIO_CHECK_MODE": "debug",
+      "SELL_COUNT_CHECK_MODE": "debug",
+      "BUY_COUNT_CHECK_MODE": "debug",
+      "TIME_DIFF_FROM_LAST_TRADE_RANGE": [
+        2000,
+        1000000000.0
+      ]
+    },
+    "conditions": [
+      {
+        "condition": "PRICE_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.02, 0.05)",
+            "low": 0.02,
+            "high": 0.05,
+            "count": 152,
+            "profitable": 46,
+            "avg_profit_rate": 0.011171532577063428,
+            "win_rate": 0.3026315789473684
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 136,
+            "profitable": 51,
+            "avg_profit_rate": 0.020436459487095607,
+            "win_rate": 0.375
+          }
+        ]
+      },
+      {
+        "condition": "TIME_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.7, 1.0)",
+            "low": 0.7,
+            "high": 1.0,
+            "count": 64,
+            "profitable": 23,
+            "avg_profit_rate": 0.0036809618938698483,
+            "win_rate": 0.359375
+          },
+          {
+            "name": "[1.5, 2.0)",
+            "low": 1.5,
+            "high": 2.0,
+            "count": 225,
+            "profitable": 81,
+            "avg_profit_rate": 0.010202186704878796,
+            "win_rate": 0.36
+          },
+          {
+            "name": "[2.0, 5.0)",
+            "low": 2.0,
+            "high": 5.0,
+            "count": 205,
+            "profitable": 62,
+            "avg_profit_rate": 0.012855741143647258,
+            "win_rate": 0.3024390243902439
+          }
+        ]
+      },
+      {
+        "condition": "AMOUNT_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 259,
+            "profitable": 89,
+            "avg_profit_rate": 0.02155954998516177,
+            "win_rate": 0.3436293436293436
+          },
+          {
+            "name": "[1.0, 1.5)",
+            "low": 1.0,
+            "high": 1.5,
+            "count": 67,
+            "profitable": 21,
+            "avg_profit_rate": 0.0029101278764559232,
+            "win_rate": 0.31343283582089554
+          }
+        ]
+      },
+      {
+        "condition": "PRICE_RATIO",
+        "buckets": [
+          {
+            "name": "[5.0, 10.0)",
+            "low": 5.0,
+            "high": 10.0,
+            "count": 327,
+            "profitable": 118,
+            "avg_profit_rate": 0.014980915396161879,
+            "win_rate": 0.36085626911314983
+          }
+        ]
+      },
+      {
+        "condition": "BUY_COUNT",
+        "buckets": [
+          {
+            "name": "[0, 2)",
+            "low": 0,
+            "high": 2,
+            "count": 88,
+            "profitable": 33,
+            "avg_profit_rate": 0.0179054214554093,
+            "win_rate": 0.375
+          },
+          {
+            "name": "[2, 4)",
+            "low": 2,
+            "high": 4,
+            "count": 131,
+            "profitable": 43,
+            "avg_profit_rate": 0.010281477770411681,
+            "win_rate": 0.3282442748091603
+          },
+          {
+            "name": "[4, 6)",
+            "low": 4,
+            "high": 6,
+            "count": 168,
+            "profitable": 57,
+            "avg_profit_rate": 0.0023453649780387172,
+            "win_rate": 0.3392857142857143
+          },
+          {
+            "name": "[8, 10)",
+            "low": 8,
+            "high": 10,
+            "count": 140,
+            "profitable": 45,
+            "avg_profit_rate": 0.01057933070346313,
+            "win_rate": 0.32142857142857145
+          }
+        ]
+      },
+      {
+        "condition": "SELL_COUNT",
+        "buckets": [
+          {
+            "name": "[6, 8)",
+            "low": 6,
+            "high": 8,
+            "count": 141,
+            "profitable": 45,
+            "avg_profit_rate": 0.010321227207728484,
+            "win_rate": 0.3191489361702128
+          },
+          {
+            "name": "[10, 12)",
+            "low": 10,
+            "high": 12,
+            "count": 168,
+            "profitable": 57,
+            "avg_profit_rate": 0.0023453649780387172,
+            "win_rate": 0.3392857142857143
+          },
+          {
+            "name": "[12, 15)",
+            "low": 12,
+            "high": 15,
+            "count": 178,
+            "profitable": 59,
+            "avg_profit_rate": 0.007233781363959176,
+            "win_rate": 0.33146067415730335
+          }
+        ]
+      },
+      {
+        "condition": "LARGE_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.05)",
+            "low": 0.0,
+            "high": 0.05,
+            "count": 106,
+            "profitable": 40,
+            "avg_profit_rate": 0.024856563823683644,
+            "win_rate": 0.37735849056603776
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 319,
+            "profitable": 110,
+            "avg_profit_rate": 0.0059864331489600745,
+            "win_rate": 0.3448275862068966
+          }
+        ]
+      },
+      {
+        "condition": "SMALL_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.1)",
+            "low": 0.0,
+            "high": 0.1,
+            "count": 75,
+            "profitable": 21,
+            "avg_profit_rate": 0.0073239153754423025,
+            "win_rate": 0.28
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 167,
+            "profitable": 55,
+            "avg_profit_rate": 0.012423380291487396,
+            "win_rate": 0.32934131736526945
+          },
+          {
+            "name": "[0.2, 0.3)",
+            "low": 0.2,
+            "high": 0.3,
+            "count": 185,
+            "profitable": 76,
+            "avg_profit_rate": 0.0006073491914317868,
+            "win_rate": 0.41081081081081083
+          },
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 79,
+            "profitable": 26,
+            "avg_profit_rate": 0.022863599947892475,
+            "win_rate": 0.3291139240506329
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_BUY",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 731,
+            "profitable": 245,
+            "avg_profit_rate": 0.00605345394868518,
+            "win_rate": 0.33515731874145005
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_SELL",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 531,
+            "profitable": 178,
+            "avg_profit_rate": 0.003255034937308213,
+            "win_rate": 0.3352165725047081
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "params": {
+      "TIME_FROM_CREATION_MINUTES": 3,
+      "NOWSOL_RANGE": [
+        5,
+        15
+      ],
+      "TRADE_AMOUNT_RANGE": [
+        0.3,
+        2.0
+      ],
+      "TIME_DIFF_CHECK_MODE": "online",
+      "FILTERED_TRADES_MIN_AMOUNT": 0.1,
+      "FILTERED_TRADES_COUNT": 7,
+      "FILTERED_TRADES_SUM_RANGE": [
+        -6.0,
+        -2.0
+      ],
+      "TRADE_TYPE": "buy",
+      "MAX_AMOUNT_CHECK_MODE": "debug",
+      "PRICE_VOLATILITY_CHECK_MODE": "debug",
+      "TIME_VOLATILITY_CHECK_MODE": "debug",
+      "AMOUNT_VOLATILITY_CHECK_MODE": "debug",
+      "PRICE_RATIO_CHECK_MODE": "debug",
+      "SELL_COUNT_CHECK_MODE": "debug",
+      "BUY_COUNT_CHECK_MODE": "debug",
+      "TIME_DIFF_FROM_LAST_TRADE_RANGE": [
+        2000,
+        1000000000.0
+      ]
+    },
+    "conditions": [
+      {
+        "condition": "PRICE_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.02, 0.05)",
+            "low": 0.02,
+            "high": 0.05,
+            "count": 157,
+            "profitable": 53,
+            "avg_profit_rate": 0.017791735625442374,
+            "win_rate": 0.3375796178343949
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 251,
+            "profitable": 87,
+            "avg_profit_rate": 0.01063756782838632,
+            "win_rate": 0.3466135458167331
+          }
+        ]
+      },
+      {
+        "condition": "TIME_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.7, 1.0)",
+            "low": 0.7,
+            "high": 1.0,
+            "count": 86,
+            "profitable": 34,
+            "avg_profit_rate": 0.016890486844208942,
+            "win_rate": 0.3953488372093023
+          },
+          {
+            "name": "[1.5, 2.0)",
+            "low": 1.5,
+            "high": 2.0,
+            "count": 307,
+            "profitable": 108,
+            "avg_profit_rate": 0.010091694122608677,
+            "win_rate": 0.3517915309446254
+          },
+          {
+            "name": "[2.0, 5.0)",
+            "low": 2.0,
+            "high": 5.0,
+            "count": 282,
+            "profitable": 86,
+            "avg_profit_rate": 0.005924060273986275,
+            "win_rate": 0.3049645390070922
+          }
+        ]
+      },
+      {
+        "condition": "AMOUNT_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 337,
+            "profitable": 114,
+            "avg_profit_rate": 0.012087548109190164,
+            "win_rate": 0.33827893175074186
+          },
+          {
+            "name": "[1.0, 1.5)",
+            "low": 1.0,
+            "high": 1.5,
+            "count": 98,
+            "profitable": 36,
+            "avg_profit_rate": 0.005385431766402815,
+            "win_rate": 0.3673469387755102
+          }
+        ]
+      },
+      {
+        "condition": "PRICE_RATIO",
+        "buckets": [
+          {
+            "name": "[5.0, 10.0)",
+            "low": 5.0,
+            "high": 10.0,
+            "count": 467,
+            "profitable": 165,
+            "avg_profit_rate": 0.010639532258992347,
+            "win_rate": 0.3533190578158458
+          },
+          {
+            "name": "[10.0, 20.0)",
+            "low": 10.0,
+            "high": 20.0,
+            "count": 78,
+            "profitable": 24,
+            "avg_profit_rate": 0.002517634180612915,
+            "win_rate": 0.3076923076923077
+          }
+        ]
+      },
+      {
+        "condition": "BUY_COUNT",
+        "buckets": [
+          {
+            "name": "[0, 2)",
+            "low": 0,
+            "high": 2,
+            "count": 149,
+            "profitable": 47,
+            "avg_profit_rate": 0.0033517458306418866,
+            "win_rate": 0.31543624161073824
+          },
+          {
+            "name": "[2, 4)",
+            "low": 2,
+            "high": 4,
+            "count": 194,
+            "profitable": 74,
+            "avg_profit_rate": 0.023595212488993232,
+            "win_rate": 0.38144329896907214
+          },
+          {
+            "name": "[4, 6)",
+            "low": 4,
+            "high": 6,
+            "count": 262,
+            "profitable": 83,
+            "avg_profit_rate": 0.0012138790345610348,
+            "win_rate": 0.31679389312977096
+          },
+          {
+            "name": "[8, 10)",
+            "low": 8,
+            "high": 10,
+            "count": 165,
+            "profitable": 52,
+            "avg_profit_rate": 0.009601856288557909,
+            "win_rate": 0.3151515151515151
+          }
+        ]
+      },
+      {
+        "condition": "SELL_COUNT",
+        "buckets": [
+          {
+            "name": "[6, 8)",
+            "low": 6,
+            "high": 8,
+            "count": 166,
+            "profitable": 52,
+            "avg_profit_rate": 0.009388512201306825,
+            "win_rate": 0.3132530120481928
+          },
+          {
+            "name": "[10, 12)",
+            "low": 10,
+            "high": 12,
+            "count": 262,
+            "profitable": 83,
+            "avg_profit_rate": 0.0012138790345610348,
+            "win_rate": 0.31679389312977096
+          },
+          {
+            "name": "[12, 15)",
+            "low": 12,
+            "high": 15,
+            "count": 278,
+            "profitable": 96,
+            "avg_profit_rate": 0.012510206114558449,
+            "win_rate": 0.34532374100719426
+          },
+          {
+            "name": "[15, +∞)",
+            "low": 15,
+            "high": 1000000000.0,
+            "count": 63,
+            "profitable": 24,
+            "avg_profit_rate": 0.025707543409402983,
+            "win_rate": 0.38095238095238093
+          }
+        ]
+      },
+      {
+        "condition": "LARGE_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.05)",
+            "low": 0.0,
+            "high": 0.05,
+            "count": 150,
+            "profitable": 55,
+            "avg_profit_rate": 0.016997964346637515,
+            "win_rate": 0.36666666666666664
+          },
+          {
+            "name": "[0.05, 0.1)",
+            "low": 0.05,
+            "high": 0.1,
+            "count": 243,
+            "profitable": 73,
+            "avg_profit_rate": 0.004730804501588581,
+            "win_rate": 0.3004115226337449
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 422,
+            "profitable": 143,
+            "avg_profit_rate": 0.004343549432010556,
+            "win_rate": 0.33886255924170616
+          }
+        ]
+      },
+      {
+        "condition": "SMALL_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.1)",
+            "low": 0.0,
+            "high": 0.1,
+            "count": 93,
+            "profitable": 26,
+            "avg_profit_rate": 0.0005858150355313929,
+            "win_rate": 0.27956989247311825
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 214,
+            "profitable": 68,
+            "avg_profit_rate": 0.00645611728930193,
+            "win_rate": 0.3177570093457944
+          },
+          {
+            "name": "[0.2, 0.3)",
+            "low": 0.2,
+            "high": 0.3,
+            "count": 251,
+            "profitable": 105,
+            "avg_profit_rate": 0.0049753187094694245,
+            "win_rate": 0.41832669322709165
+          },
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 118,
+            "profitable": 38,
+            "avg_profit_rate": 0.010819148713276123,
+            "win_rate": 0.3220338983050847
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_BUY",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 1013,
+            "profitable": 338,
+            "avg_profit_rate": 0.004472249037508838,
+            "win_rate": 0.3336623889437315
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_SELL",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 738,
+            "profitable": 249,
+            "avg_profit_rate": 0.004408621088814175,
+            "win_rate": 0.33739837398373984
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "params": {
+      "TIME_FROM_CREATION_MINUTES": 3,
+      "NOWSOL_RANGE": [
+        5,
+        15
+      ],
+      "TRADE_AMOUNT_RANGE": [
+        0.3,
+        2.0
+      ],
+      "TIME_DIFF_CHECK_MODE": "online",
+      "FILTERED_TRADES_MIN_AMOUNT": 0.2,
+      "FILTERED_TRADES_COUNT": 7,
+      "FILTERED_TRADES_SUM_RANGE": [
+        -4.0,
+        -2.0
+      ],
+      "TRADE_TYPE": "buy",
+      "MAX_AMOUNT_CHECK_MODE": "debug",
+      "PRICE_VOLATILITY_CHECK_MODE": "debug",
+      "TIME_VOLATILITY_CHECK_MODE": "debug",
+      "AMOUNT_VOLATILITY_CHECK_MODE": "debug",
+      "PRICE_RATIO_CHECK_MODE": "debug",
+      "SELL_COUNT_CHECK_MODE": "debug",
+      "BUY_COUNT_CHECK_MODE": "debug",
+      "TIME_DIFF_FROM_LAST_TRADE_RANGE": [
+        2000,
+        1000000000.0
+      ]
+    },
+    "conditions": [
+      {
+        "condition": "PRICE_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.02, 0.05)",
+            "low": 0.02,
+            "high": 0.05,
+            "count": 154,
+            "profitable": 49,
+            "avg_profit_rate": 0.020786907197857203,
+            "win_rate": 0.3181818181818182
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 114,
+            "profitable": 40,
+            "avg_profit_rate": 0.009870457983880724,
+            "win_rate": 0.3508771929824561
+          }
+        ]
+      },
+      {
+        "condition": "TIME_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[1.5, 2.0)",
+            "low": 1.5,
+            "high": 2.0,
+            "count": 247,
+            "profitable": 95,
+            "avg_profit_rate": 0.014048310583657901,
+            "win_rate": 0.38461538461538464
+          },
+          {
+            "name": "[2.0, 5.0)",
+            "low": 2.0,
+            "high": 5.0,
+            "count": 205,
+            "profitable": 64,
+            "avg_profit_rate": 0.016339169422107436,
+            "win_rate": 0.3121951219512195
+          }
+        ]
+      },
+      {
+        "condition": "AMOUNT_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.2, 0.5)",
+            "low": 0.2,
+            "high": 0.5,
+            "count": 93,
+            "profitable": 32,
+            "avg_profit_rate": 0.00516723974805213,
+            "win_rate": 0.34408602150537637
+          },
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 252,
+            "profitable": 80,
+            "avg_profit_rate": 0.013901001691566132,
+            "win_rate": 0.31746031746031744
+          }
+        ]
+      },
+      {
+        "condition": "PRICE_RATIO",
+        "buckets": [
+          {
+            "name": "[3.0, 5.0)",
+            "low": 3.0,
+            "high": 5.0,
+            "count": 168,
+            "profitable": 62,
+            "avg_profit_rate": 0.008299921435116663,
+            "win_rate": 0.36904761904761907
+          },
+          {
+            "name": "[5.0, 10.0)",
+            "low": 5.0,
+            "high": 10.0,
+            "count": 344,
+            "profitable": 112,
+            "avg_profit_rate": 0.008866958268460028,
+            "win_rate": 0.32558139534883723
+          },
+          {
+            "name": "[10.0, 20.0)",
+            "low": 10.0,
+            "high": 20.0,
+            "count": 104,
+            "profitable": 34,
+            "avg_profit_rate": 0.0030971639009926555,
+            "win_rate": 0.3269230769230769
+          }
+        ]
+      },
+      {
+        "condition": "BUY_COUNT",
+        "buckets": [
+          {
+            "name": "[0, 2)",
+            "low": 0,
+            "high": 2,
+            "count": 81,
+            "profitable": 29,
+            "avg_profit_rate": 0.0015954613593537237,
+            "win_rate": 0.35802469135802467
+          },
+          {
+            "name": "[4, 6)",
+            "low": 4,
+            "high": 6,
+            "count": 190,
+            "profitable": 61,
+            "avg_profit_rate": 0.003790871122373388,
+            "win_rate": 0.32105263157894737
+          },
+          {
+            "name": "[8, 10)",
+            "low": 8,
+            "high": 10,
+            "count": 143,
+            "profitable": 47,
+            "avg_profit_rate": 0.022047340258227122,
+            "win_rate": 0.32867132867132864
+          }
+        ]
+      },
+      {
+        "condition": "SELL_COUNT",
+        "buckets": [
+          {
+            "name": "[6, 8)",
+            "low": 6,
+            "high": 8,
+            "count": 143,
+            "profitable": 47,
+            "avg_profit_rate": 0.022047340258227122,
+            "win_rate": 0.32867132867132864
+          },
+          {
+            "name": "[10, 12)",
+            "low": 10,
+            "high": 12,
+            "count": 190,
+            "profitable": 61,
+            "avg_profit_rate": 0.003790871122373388,
+            "win_rate": 0.32105263157894737
+          }
+        ]
+      },
+      {
+        "condition": "LARGE_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.05)",
+            "low": 0.0,
+            "high": 0.05,
+            "count": 181,
+            "profitable": 62,
+            "avg_profit_rate": 0.014918341081220166,
+            "win_rate": 0.3425414364640884
+          },
+          {
+            "name": "[0.05, 0.1)",
+            "low": 0.05,
+            "high": 0.1,
+            "count": 214,
+            "profitable": 69,
+            "avg_profit_rate": 0.0007219857336155838,
+            "win_rate": 0.32242990654205606
+          },
+          {
+            "name": "[0.2, 0.3)",
+            "low": 0.2,
+            "high": 0.3,
+            "count": 92,
+            "profitable": 29,
+            "avg_profit_rate": 0.015272073258227907,
+            "win_rate": 0.31521739130434784
+          }
+        ]
+      },
+      {
+        "condition": "SMALL_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.1)",
+            "low": 0.0,
+            "high": 0.1,
+            "count": 64,
+            "profitable": 18,
+            "avg_profit_rate": 0.012649702044204573,
+            "win_rate": 0.28125
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 162,
+            "profitable": 54,
+            "avg_profit_rate": 0.0007020058142121126,
+            "win_rate": 0.3333333333333333
+          },
+          {
+            "name": "[0.2, 0.3)",
+            "low": 0.2,
+            "high": 0.3,
+            "count": 186,
+            "profitable": 74,
+            "avg_profit_rate": 0.0005658548126853035,
+            "win_rate": 0.3978494623655914
+          },
+          {
+            "name": "[0.3, 0.5)",
+            "low": 0.3,
+            "high": 0.5,
+            "count": 246,
+            "profitable": 77,
+            "avg_profit_rate": 0.006075404176492434,
+            "win_rate": 0.3130081300813008
+          },
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 95,
+            "profitable": 25,
+            "avg_profit_rate": 0.00307086190553252,
+            "win_rate": 0.2631578947368421
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_BUY",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 756,
+            "profitable": 241,
+            "avg_profit_rate": 0.003991569579197612,
+            "win_rate": 0.3187830687830688
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_SELL",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 598,
+            "profitable": 190,
+            "avg_profit_rate": 0.0009728944178388873,
+            "win_rate": 0.3177257525083612
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "params": {
+      "TIME_FROM_CREATION_MINUTES": 3,
+      "NOWSOL_RANGE": [
+        5,
+        15
+      ],
+      "TRADE_AMOUNT_RANGE": [
+        0.3,
+        2.0
+      ],
+      "TIME_DIFF_CHECK_MODE": "online",
+      "FILTERED_TRADES_MIN_AMOUNT": 0.1,
+      "FILTERED_TRADES_COUNT": 10,
+      "FILTERED_TRADES_SUM_RANGE": [
+        -4.0,
+        -2.0
+      ],
+      "TRADE_TYPE": "buy",
+      "MAX_AMOUNT_CHECK_MODE": "debug",
+      "PRICE_VOLATILITY_CHECK_MODE": "debug",
+      "TIME_VOLATILITY_CHECK_MODE": "debug",
+      "AMOUNT_VOLATILITY_CHECK_MODE": "debug",
+      "PRICE_RATIO_CHECK_MODE": "debug",
+      "SELL_COUNT_CHECK_MODE": "debug",
+      "BUY_COUNT_CHECK_MODE": "debug",
+      "TIME_DIFF_FROM_LAST_TRADE_RANGE": [
+        2000,
+        1000000000.0
+      ]
+    },
+    "conditions": [
+      {
+        "condition": "PRICE_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.02, 0.05)",
+            "low": 0.02,
+            "high": 0.05,
+            "count": 134,
+            "profitable": 44,
+            "avg_profit_rate": 0.01979103172337725,
+            "win_rate": 0.3283582089552239
+          },
+          {
+            "name": "[0.05, 0.1)",
+            "low": 0.05,
+            "high": 0.1,
+            "count": 500,
+            "profitable": 152,
+            "avg_profit_rate": 9.992902004681952e-05,
+            "win_rate": 0.304
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 106,
+            "profitable": 33,
+            "avg_profit_rate": 0.0008178799216700326,
+            "win_rate": 0.3113207547169811
+          }
+        ]
+      },
+      {
+        "condition": "TIME_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[1.5, 2.0)",
+            "low": 1.5,
+            "high": 2.0,
+            "count": 217,
+            "profitable": 78,
+            "avg_profit_rate": 0.015581366547593152,
+            "win_rate": 0.35944700460829493
+          },
+          {
+            "name": "[2.0, 5.0)",
+            "low": 2.0,
+            "high": 5.0,
+            "count": 199,
+            "profitable": 61,
+            "avg_profit_rate": 0.010593996005302309,
+            "win_rate": 0.3065326633165829
+          }
+        ]
+      },
+      {
+        "condition": "AMOUNT_VOLATILITY",
+        "buckets": [
+          {
+            "name": "[0.2, 0.5)",
+            "low": 0.2,
+            "high": 0.5,
+            "count": 76,
+            "profitable": 30,
+            "avg_profit_rate": 0.004097062804099529,
+            "win_rate": 0.39473684210526316
+          },
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 235,
+            "profitable": 69,
+            "avg_profit_rate": 0.00961605462904362,
+            "win_rate": 0.2936170212765957
+          },
+          {
+            "name": "[0.7, 1.0)",
+            "low": 0.7,
+            "high": 1.0,
+            "count": 343,
+            "profitable": 101,
+            "avg_profit_rate": 0.001398377883244183,
+            "win_rate": 0.2944606413994169
+          }
+        ]
+      },
+      {
+        "condition": "PRICE_RATIO",
+        "buckets": [
+          {
+            "name": "[3.0, 5.0)",
+            "low": 3.0,
+            "high": 5.0,
+            "count": 158,
+            "profitable": 57,
+            "avg_profit_rate": 0.0088736903506585,
+            "win_rate": 0.36075949367088606
+          },
+          {
+            "name": "[5.0, 10.0)",
+            "low": 5.0,
+            "high": 10.0,
+            "count": 309,
+            "profitable": 103,
+            "avg_profit_rate": 0.015090532632382272,
+            "win_rate": 0.3333333333333333
+          },
+          {
+            "name": "[10.0, 20.0)",
+            "low": 10.0,
+            "high": 20.0,
+            "count": 114,
+            "profitable": 35,
+            "avg_profit_rate": 0.0006510331275963224,
+            "win_rate": 0.30701754385964913
+          }
+        ]
+      },
+      {
+        "condition": "BUY_COUNT",
+        "buckets": [
+          {
+            "name": "[0, 2)",
+            "low": 0,
+            "high": 2,
+            "count": 62,
+            "profitable": 23,
+            "avg_profit_rate": 0.030434895106072272,
+            "win_rate": 0.3709677419354839
+          },
+          {
+            "name": "[2, 4)",
+            "low": 2,
+            "high": 4,
+            "count": 123,
+            "profitable": 44,
+            "avg_profit_rate": 0.01363737065655039,
+            "win_rate": 0.35772357723577236
+          },
+          {
+            "name": "[4, 6)",
+            "low": 4,
+            "high": 6,
+            "count": 220,
+            "profitable": 67,
+            "avg_profit_rate": 0.0010699491110381365,
+            "win_rate": 0.30454545454545456
+          },
+          {
+            "name": "[8, 10)",
+            "low": 8,
+            "high": 10,
+            "count": 105,
+            "profitable": 27,
+            "avg_profit_rate": 0.00947937260080632,
+            "win_rate": 0.2571428571428571
+          }
+        ]
+      },
+      {
+        "condition": "SELL_COUNT",
+        "buckets": [
+          {
+            "name": "[6, 8)",
+            "low": 6,
+            "high": 8,
+            "count": 105,
+            "profitable": 27,
+            "avg_profit_rate": 0.00947937260080632,
+            "win_rate": 0.2571428571428571
+          },
+          {
+            "name": "[12, 15)",
+            "low": 12,
+            "high": 15,
+            "count": 161,
+            "profitable": 54,
+            "avg_profit_rate": 0.011169834395282343,
+            "win_rate": 0.33540372670807456
+          }
+        ]
+      },
+      {
+        "condition": "LARGE_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.05)",
+            "low": 0.0,
+            "high": 0.05,
+            "count": 164,
+            "profitable": 62,
+            "avg_profit_rate": 0.019711974450767035,
+            "win_rate": 0.3780487804878049
+          },
+          {
+            "name": "[0.05, 0.1)",
+            "low": 0.05,
+            "high": 0.1,
+            "count": 202,
+            "profitable": 62,
+            "avg_profit_rate": 0.01345066199643772,
+            "win_rate": 0.3069306930693069
+          }
+        ]
+      },
+      {
+        "condition": "SMALL_TRADE_RATIO",
+        "buckets": [
+          {
+            "name": "[0.0, 0.1)",
+            "low": 0.0,
+            "high": 0.1,
+            "count": 61,
+            "profitable": 15,
+            "avg_profit_rate": 0.00969048799177747,
+            "win_rate": 0.2459016393442623
+          },
+          {
+            "name": "[0.1, 0.2)",
+            "low": 0.1,
+            "high": 0.2,
+            "count": 132,
+            "profitable": 44,
+            "avg_profit_rate": 0.0036894145818452124,
+            "win_rate": 0.3333333333333333
+          },
+          {
+            "name": "[0.2, 0.3)",
+            "low": 0.2,
+            "high": 0.3,
+            "count": 164,
+            "profitable": 61,
+            "avg_profit_rate": 0.0058042470877524115,
+            "win_rate": 0.3719512195121951
+          },
+          {
+            "name": "[0.5, 0.7)",
+            "low": 0.5,
+            "high": 0.7,
+            "count": 104,
+            "profitable": 29,
+            "avg_profit_rate": 0.010562810516625208,
+            "win_rate": 0.27884615384615385
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_BUY",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 694,
+            "profitable": 216,
+            "avg_profit_rate": 0.003745505612558699,
+            "win_rate": 0.3112391930835735
+          }
+        ]
+      },
+      {
+        "condition": "CONSECUTIVE_SELL",
+        "buckets": [
+          {
+            "name": "[0, 1)",
+            "low": 0,
+            "high": 1,
+            "count": 579,
+            "profitable": 184,
+            "avg_profit_rate": 0.003358762433441658,
+            "win_rate": 0.3177892918825561
+          },
+          {
+            "name": "[1, 2)",
+            "low": 1,
+            "high": 2,
+            "count": 87,
+            "profitable": 28,
+            "avg_profit_rate": 0.007105091020724501,
+            "win_rate": 0.3218390804597701
+          }
+        ]
+      }
+    ]
+  }
+]

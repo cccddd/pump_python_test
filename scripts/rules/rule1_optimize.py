@@ -3,6 +3,9 @@ import itertools
 import copy
 import io
 import contextlib
+import concurrent.futures
+import multiprocessing
+import shutil
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import pump
 import json
@@ -11,14 +14,24 @@ from typing import Dict, List, Optional, Tuple
 STRATEGY_CONFIG = pump.STRATEGY_CONFIG
 
 # =============================================================================
-# 参数搜索空间定义
+# 参数搜索空间定义 (根据要求初始化多个分组)
 # =============================================================================
 PARAM_SEARCH_SPACE = {
     'TIME_FROM_CREATION_MINUTES': [3],
-    'NOWSOL_RANGE': [(5, 35)],
-    'FILTERED_TRADES_MIN_AMOUNT': [0.05],
+    'NOWSOL_RANGE': [(5, 35), (5, 15)],
+    'TRADE_AMOUNT_RANGE': [(0.3, 2.0)],
+    'TIME_DIFF_CHECK_MODE': ['debug'],
+    'FILTERED_TRADES_MIN_AMOUNT': [0.05, 0.1, 0.2],
     'FILTERED_TRADES_COUNT': [7, 10],
-    'FILTERED_TRADES_SUM_RANGE': [(-5.0, -1.0), (-4.0, -2.0), (-3.0, -1.0)],
+    'FILTERED_TRADES_SUM_RANGE': [(-6.0, -2.0), (-4.0, -2.0)],
+    'TRADE_TYPE': ['buy'],
+    'MAX_AMOUNT_CHECK_MODE': ['debug'],
+    'PRICE_VOLATILITY_CHECK_MODE': ['debug'],
+    'TIME_VOLATILITY_CHECK_MODE': ['debug'],
+    'AMOUNT_VOLATILITY_CHECK_MODE': ['debug'],
+    'PRICE_RATIO_CHECK_MODE': ['debug'],
+    'SELL_COUNT_CHECK_MODE': ['debug'],
+    'BUY_COUNT_CHECK_MODE': ['debug'],
 }
 
 # =============================================================================
@@ -653,10 +666,12 @@ class BacktestResultCollector:
 
     def _compute_bucket_stats(self, values_with_profit, buckets):
         bucket_stats = []
+        # Use 1e9 instead of float('inf') to ensure valid JSON output (Infinity is not valid JSON)
+        INF_REPLACEMENT = 1e9
         for i in range(len(buckets)):
             low = buckets[i]
-            high = buckets[i + 1] if i + 1 < len(buckets) else float('inf')
-            bucket_name = f"[{low}, {high})" if high != float('inf') else f"[{low}, +∞)"
+            high = buckets[i + 1] if i + 1 < len(buckets) else INF_REPLACEMENT
+            bucket_name = f"[{low}, {high})" if high != INF_REPLACEMENT else f"[{low}, +∞)"
 
             in_bucket = [(v, pr, ip) for v, pr, ip in values_with_profit if low <= v < high]
             count = len(in_bucket)
@@ -879,14 +894,26 @@ def extract_profitable_range_from_snapshot(snapshot, condition_order):
             continue
 
         range_min = min(bs['low'] for bs in profitable_buckets)
-        range_max = max(bs['high'] for bs in profitable_buckets)
-        if range_max == float('inf'):
-            all_highs = [bs['high'] for bs in profitable_buckets if bs['high'] != float('inf')]
-            range_max = max(all_highs) if all_highs else (data['buckets'][-1] * 2 if data['buckets'] else 999999)
-
+        range_max = max(bs['high'] if bs['high'] != float('inf') else 999999 for bs in profitable_buckets)
         mode_key = data['mode_key']
         return cond_name, mode_key, range_key, (range_min, range_max)
     return None
+
+
+def run_backtests_concurrent(param_list, log_file, max_workers=None):
+    """Run run_single_backtest over param_list in parallel and return list of results."""
+    if max_workers is None:
+        max_workers = min(8, (multiprocessing.cpu_count() or 2) * 2)
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futures = {ex.submit(run_single_backtest, p, log_file, True): p for p in param_list}
+        for fut in concurrent.futures.as_completed(futures):
+            try:
+                res = fut.result()
+            except Exception as e:
+                res = {'params': futures[fut], 'config': None, 'summary': {'total_trades': 0, 'profitable_trades': 0, 'win_rate': 0.0, 'total_profit_sol': 0.0, 'avg_profit_rate': 0.0}, 'debug_snapshot': {}, 'error': str(e)}
+            results.append(res)
+    return results
 
 
 # =============================================================================
@@ -927,17 +954,44 @@ def main():
     step2_all_results = []
     step2_start = time.time()
 
-    for idx, params in enumerate(param_combinations):
-        combo_start = time.time()
-        result = run_single_backtest(params, log_file, silent=True)
-        result['time'] = time.time() - combo_start
-        step2_all_results.append(result)
+    # STEP2a: run a single initial baseline using the first option of each search key
+    initial_params = {}
+    for k, v in PARAM_SEARCH_SPACE.items():
+        initial_params[k] = v[0] if isinstance(v, (list, tuple)) and len(v) > 0 else v
 
-        s = result['summary']
-        tag = ""
-        if meets_full_criteria(s):
-            tag = "✅ 满足全部条件"
-        print_result_line(idx + 1, total_combinations, result, tag)
+    print("\n  → STEP2a: 先运行每个条件的第一个组合 (快速判断)")
+    baseline_start = time.time()
+    baseline_result = run_single_backtest(initial_params, log_file, silent=True)
+    baseline_result['time'] = time.time() - baseline_start
+    step2_all_results.append(baseline_result)
+    print_result_line(1, total_combinations, baseline_result, "(baseline)")
+
+    # If baseline already meets the strict FILTER_THRESHOLDS, we can continue to analysis
+    if meets_full_criteria(baseline_result['summary']):
+        print("  ✅ 基线组合已满足Step3要求，跳过其余组合回测")
+        remaining_results = []
+    else:
+        # STEP2b: 并发执行其余参数组合以加速搜索
+        print("\n  → STEP2b: 并发执行其余组合回测（加速）")
+        remaining_params = []
+        baseline_key = json.dumps(initial_params, sort_keys=True, default=str)
+        for p in param_combinations:
+            if json.dumps(p, sort_keys=True, default=str) == baseline_key:
+                continue
+            remaining_params.append(p)
+
+        if remaining_params:
+            concurrent_results = run_backtests_concurrent(remaining_params, log_file)
+            # attach timing approximately
+            for res in concurrent_results:
+                res['time'] = time.time() - step2_start
+                step2_all_results.append(res)
+                idx = len(step2_all_results)
+                s = res['summary']
+                tag = "✅ 满足全部条件" if meets_full_criteria(s) else ""
+                print_result_line(idx, total_combinations, res, tag)
+        else:
+            print("  (没有需要并发回测的组合)")
 
     step2_time = time.time() - step2_start
     print(f"\nStep2完成, 耗时: {step2_time:.1f}s")
@@ -1018,11 +1072,7 @@ def main():
 
             # 提取范围
             range_min = min(bs['low'] for bs in profitable_buckets)
-            range_max = max(bs['high'] for bs in profitable_buckets)
-            if range_max == float('inf'):
-                all_highs = [bs['high'] for bs in profitable_buckets if bs['high'] != float('inf')]
-                range_max = max(all_highs) if all_highs else (td_data['buckets'][-1] * 2)
-
+            range_max = max(bs['high'] if bs['high'] != float('inf') else 999999 for bs in profitable_buckets)
             new_range = (range_min, range_max)
             print(f"  → 提取TIME_DIFF盈利范围: {new_range}")
             print(f"  → 设置 TIME_DIFF_CHECK_MODE='online', TIME_DIFF_FROM_LAST_TRADE_RANGE={new_range}")
@@ -1146,6 +1196,38 @@ def main():
                           f"平均盈利率: {bs['avg_profit_rate']*100:.2f}%")
             if not found_any:
                 print(f"    (无满足条件的分桶)")
+
+    # 保存规则到 rule.json: 收集debug模式下 avg_profit_rate>0 且 count>50 的分桶，并按 params 合并为 conditions 列表
+    try:
+        grouped = {}
+        for result in step5_qualified:
+            snapshot = result.get('debug_snapshot', {})
+            params = result.get('params', {}) or {}
+            key = json.dumps(params, sort_keys=True, default=str)
+            if key not in grouped:
+                grouped[key] = {'params': params, 'conditions': []}
+            for cond_name, data in snapshot.items():
+                good_buckets = [bs for bs in data.get('bucket_stats', []) if bs.get('count', 0) > 50 and bs.get('avg_profit_rate', 0.0) > 0.0]
+                if not good_buckets:
+                    continue
+                grouped[key]['conditions'].append({'condition': cond_name, 'buckets': good_buckets})
+
+        merged_rules = list(grouped.values())
+        if merged_rules:
+            rule_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'rule.json'))
+            # backup existing file
+            try:
+                if os.path.exists(rule_path):
+                    bak_path = rule_path + '.bak'
+                    shutil.copyfile(rule_path, bak_path)
+            except Exception:
+                pass
+            with open(rule_path, 'w', encoding='utf-8') as rf:
+                json.dump(merged_rules, rf, ensure_ascii=False, indent=2)
+            total_conditions = sum(len(g['conditions']) for g in merged_rules)
+            print(f"\n已将{total_conditions}个条件保存到: {rule_path}")
+    except Exception as e:
+        print(f"保存rule.json失败: {e}")
 
     # 输出最佳配置
     if step5_qualified:
