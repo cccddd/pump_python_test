@@ -107,10 +107,15 @@ SELL_CONDITIONS_CONFIG = {
     'RETRACEMENT_LOW_PROFIT': 0.05,
     'RETRACEMENT_HIGH_PROFIT': 0.05,
     'HIGH_PROFIT_THRESHOLD': 0.30,
+    'RETRACEMENT_MIN_COUNT': 3,  # 回撤区间内价格拐点向下次数 >= 此值才触发卖出
     'MAX_HOLD_TIME_SECONDS': 400,
     'QUIET_PERIOD_ENABLED': True,
     'QUIET_PERIOD_SECONDS': 40,
     'QUIET_PERIOD_MIN_AMOUNT': 0.5,
+    # 短期暴涨卖出
+    'SPIKE_SELL_ENABLED': True,  # 是否启用短期暴涨卖出
+    'SPIKE_LOOKBACK_MS': 1000,  # 回看时间窗口（毫秒），默认1秒
+    'SPIKE_THRESHOLD_PCT': 10.0,  # 涨幅阈值百分比，当前价格相对于1秒前价格涨幅 >= 此值时卖出
 }
 
 # =============================================================================
@@ -466,12 +471,21 @@ def variant_find_sell_signal(trade_data, buy_index, buy_price, buy_time):
     retracement_low = SELL_CONDITIONS_CONFIG['RETRACEMENT_LOW_PROFIT']
     retracement_high = SELL_CONDITIONS_CONFIG['RETRACEMENT_HIGH_PROFIT']
     high_profit_threshold = SELL_CONDITIONS_CONFIG['HIGH_PROFIT_THRESHOLD']
+    retracement_min_count = SELL_CONDITIONS_CONFIG.get('RETRACEMENT_MIN_COUNT', 1)
     max_hold_seconds = SELL_CONDITIONS_CONFIG['MAX_HOLD_TIME_SECONDS']
     quiet_period_enabled = SELL_CONDITIONS_CONFIG['QUIET_PERIOD_ENABLED']
     quiet_period_seconds = SELL_CONDITIONS_CONFIG['QUIET_PERIOD_SECONDS']
     quiet_period_min_amount = SELL_CONDITIONS_CONFIG['QUIET_PERIOD_MIN_AMOUNT']
+    spike_sell_enabled = SELL_CONDITIONS_CONFIG.get('SPIKE_SELL_ENABLED', False)
+    spike_lookback_ms = SELL_CONDITIONS_CONFIG.get('SPIKE_LOOKBACK_MS', 1000)
+    spike_threshold_pct = SELL_CONDITIONS_CONFIG.get('SPIKE_THRESHOLD_PCT', 10.0)
 
     min_price_before_buy = get_min_price_before_buy(trade_data, buy_index, lookback_count)
+
+    retracement_inflection_count = 0  # 回撤区间内价格拐点向下计数
+    in_retracement = False  # 是否处于回撤区间
+    prev_price = None  # 上一笔价格（用于检测拐点）
+    prev_prev_price = None  # 上上笔价格（用于检测拐点）
 
     for i in range(buy_index, len(trade_data)):
         trade = trade_data[i]
@@ -495,16 +509,57 @@ def variant_find_sell_signal(trade_data, buy_index, buy_price, buy_time):
 
         if max_price > original_buy_price:
             retracement = (max_price - current_price) / max_price
+
+            # 判断当前回撤阈值
             if max_profit_rate < high_profit_threshold:
-                if retracement >= retracement_low:
-                    return i, "回撤止损(低)"
+                retracement_threshold = retracement_low
             else:
-                if retracement >= retracement_high:
-                    return i, "回撤止损(高)"
+                retracement_threshold = retracement_high
+
+            if retracement >= retracement_threshold:
+                if not in_retracement:
+                    # 刚进入回撤区间，重置拐点计数
+                    in_retracement = True
+                    retracement_inflection_count = 0
+                    prev_price = None
+                    prev_prev_price = None
+
+                # 检测价格拐点向下: 上一笔 >= 上上笔（涨或平），当前 < 上一笔（跌）
+                if prev_price is not None and prev_prev_price is not None:
+                    if prev_price >= prev_prev_price and current_price < prev_price:
+                        retracement_inflection_count += 1
+
+                # 拐点计数达到阈值则卖出
+                if retracement_inflection_count >= retracement_min_count:
+                    label = "低" if max_profit_rate < high_profit_threshold else "高"
+                    return i, f"回撤止损({label})"
+            else:
+                # 离开回撤区间，重置
+                in_retracement = False
+                retracement_inflection_count = 0
+
+        # 更新前两笔价格记录
+        prev_prev_price = prev_price
+        prev_price = current_price
 
         hold_time_seconds = (current_time - buy_time) / 1000
         if hold_time_seconds > max_hold_seconds:
             return (i - 1 if i > buy_index else i), "时间止损"
+
+        # 短期暴涨卖出
+        if spike_sell_enabled and current_profit_rate > 0:
+            spike_start_time = current_time - spike_lookback_ms
+            ref_price = None
+            for j in range(i - 1, buy_index - 1, -1):
+                prev_trade = trade_data[j]
+                prev_time = prev_trade['tradetime']
+                if prev_time <= spike_start_time:
+                    ref_price = prev_trade['price']
+                    break
+            if ref_price is not None and ref_price > 0:
+                spike_pct = (current_price - ref_price) / ref_price * 100.0
+                if spike_pct >= spike_threshold_pct:
+                    return i, "短期暴涨卖出"
 
         if quiet_period_enabled and current_tradeamount < 0:
             quiet_period_start_time = current_time - quiet_period_seconds * 1000

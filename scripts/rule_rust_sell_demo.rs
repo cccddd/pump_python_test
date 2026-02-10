@@ -6,10 +6,111 @@ use crate::{
     processer::PipelineHandler,
 };
 use async_trait::async_trait;
-use std::io::Write; // for writeln! to resolve write_fmt on File
+use std::io::Write;
+use serde::Deserialize;
 
-/// 量化卖出策略
-pub struct  PumpQtfySellProcesserDemo;
+// =============================================================================
+// 卖出条件配置结构体 - 从 sell_rules.json 加载
+// =============================================================================
+#[derive(Debug, Deserialize, Clone)]
+pub struct SellConditionsConfig {
+    pub max_nowsol_sell: f32,           // 市值止盈阈值
+    pub profit_rate_sell_enabled: bool, // 是否启用盈利率止盈
+    pub profit_rate_sell_threshold: f64, // 盈利率止盈阈值 (0.5 = 50%)
+    pub loss_percentage: f64,           // 亏损止损比例 (0.3 = 30%)
+    pub lookback_trades_for_min_price: usize, // 买入前回看笔数取最低价
+    pub retracement_low_profit: f64,    // 低利润回撤止损比例 (0.05 = 5%)
+    pub retracement_high_profit: f64,   // 高利润回撤止损比例 (0.1 = 10%)
+    pub high_profit_threshold: f64,     // 高低利润分界阈值 (0.4 = 40%)
+    pub retracement_min_count: usize,   // 回撤区间内拐点次数阈值
+    pub retracement_inflection_window: usize, // 拐点检测窗口大小
+    pub retracement_min_hold_ms: u64,   // 回撤止损最小持有时间（毫秒）
+    pub retracement_min_profit: f64,    // 回撤止损最小盈利阈值 (0.05 = 5%)
+    pub sell_pressure_enabled: bool,    // 是否启用卖压检测
+    pub sell_pressure_lookback: usize,  // 卖压检测近N单
+    pub sell_pressure_sum_threshold: f32, // 近N单总和阈值
+    pub sell_pressure_all_sell: bool,   // 近N单全是卖单时卖出
+    pub max_hold_time_seconds: u64,     // 最大持仓秒数
+    pub quiet_period_enabled: bool,     // 是否启用冷淡期卖出
+    pub quiet_period_seconds: u64,      // 冷淡期检测窗口(秒)
+    pub quiet_period_min_amount: f32,   // 冷淡期大单阈值(SOL)
+    pub spike_sell_enabled: bool,       // 是否启用短期暴涨卖出
+    pub spike_lookback_ms: u64,         // 短期暴涨回看时间窗口(毫秒)
+    pub spike_threshold_pct: f64,       // 短期暴涨阈值百分比
+    pub rebound_sell_enabled: bool,     // 是否启用反弹卖出
+    pub rebound_min_loss_pct: f64,      // 反弹卖出最低亏损阈值百分比
+    pub rebound_min_profit_pct: f64,    // 反弹卖出盈利阈值百分比
+    pub rebound_min_buy_amount: f32,    // 反弹卖出触发的最小买单金额(SOL)
+}
+
+#[derive(Debug, Deserialize)]
+struct SellRulesFile {
+    sell_conditions: SellConditionsConfig,
+}
+
+impl SellConditionsConfig {
+    /// 从 sell_rules.json 加载配置，失败则使用默认值
+    pub fn load_from_json(path: &str) -> Self {
+        match std::fs::read_to_string(path) {
+            Ok(content) => {
+                match serde_json::from_str::<SellRulesFile>(&content) {
+                    Ok(rules) => {
+                        tracing::info!("卖出规则加载成功: {}", path);
+                        rules.sell_conditions
+                    }
+                    Err(e) => {
+                        tracing::error!("解析卖出规则JSON失败: {}, 使用默认值", e);
+                        Self::default()
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::error!("读取卖出规则文件失败: {}, 使用默认值", e);
+                Self::default()
+            }
+        }
+    }
+
+    fn default() -> Self {
+        Self {
+            max_nowsol_sell: 300.0,
+            profit_rate_sell_enabled: true,   // 启用盈利率止盈
+            profit_rate_sell_threshold: 0.5,  // 盈利率 >= 50% 时直接卖出
+            loss_percentage: 0.30,            // 亏损达到 30% 时触发止损
+            lookback_trades_for_min_price: 20,
+            retracement_low_profit: 0.05,     // 最大盈利 < 40% 时，回撤 5% 卖出
+            retracement_high_profit: 0.10,    // 最大盈利 >= 40% 时，回撤 10% 卖出
+            high_profit_threshold: 0.40,      // 高盈利阈值 40%
+            retracement_min_count: 1,         // 拐点次数阈值
+            retracement_inflection_window: 5, // 拐点检测窗口大小
+            retracement_min_hold_ms: 60000,   // 回撤止损最小持有时间 60秒
+            retracement_min_profit: 0.05,     // 回撤止损最小盈利阈值 5%
+            sell_pressure_enabled: false,     // 是否启用卖压检测
+            sell_pressure_lookback: 10,       // 卖压检测近10单
+            sell_pressure_sum_threshold: -20.0, // 近10单总和 < -20 SOL 时卖出
+            sell_pressure_all_sell: false,    // 近10单全是卖单时卖出
+            max_hold_time_seconds: 6000,
+            quiet_period_enabled: true,
+            quiet_period_seconds: 20,
+            quiet_period_min_amount: 0.8,
+            spike_sell_enabled: true,
+            spike_lookback_ms: 1000,
+            spike_threshold_pct: 10.0,
+            rebound_sell_enabled: false,      // 禁用反弹卖出
+            rebound_min_loss_pct: 7.0,
+            rebound_min_profit_pct: 5.0,
+            rebound_min_buy_amount: 2.5,
+        }
+    }
+}
+
+// // 全局卖出配置 (延迟初始化)
+// lazy_static::lazy_static! {
+//     static ref SELL_CONFIG: SellConditionsConfig = SellConditionsConfig::load_from_json("sell_rules.json");
+// }
+
+/// 量化卖出策略 - 对应 Python variant_find_sell_signal 的6个卖出条件
+pub struct PumpQtfySellProcesserDemo;
 
 #[async_trait]
 impl PipelineHandler for PumpQtfySellProcesserDemo {
@@ -25,7 +126,7 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                 return Some(data);
             }
 
-            let mut sell_reason = "".to_string();
+            let mut sell_reason = String::new();
             let beijing_time =
                         chrono::NaiveDateTime::from_timestamp_opt(*data.trade_time() as i64, 0)
                             .map(|t| {
@@ -34,132 +135,363 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                                     .to_string()
                             })
                             .unwrap_or_else(|| "Invalid timestamp".to_string());
-            
-          
-                //重写触发价格和时间
-                if indicator.swap_cnt<1{
-                    indicator.start_price=data.price().clone();
+
+                // 重写触发价格和时间 (首笔交易初始化)
+                if indicator.swap_cnt < 1 {
+                    indicator.start_price = data.price().clone();
                     indicator.open_time = data.trade_miltime().clone();
-                    indicator.rate=0.0;
-                    indicator.max_rate=0.0;
-                    indicator.min_rate=0.0;
-                    indicator.max_price=0.0;
-                    indicator.min_price=0.0;
-                    // return Some(data);
+                    indicator.rate = 0.0;
+                    indicator.max_rate = 0.0;
+                    indicator.min_rate = 0.0;
+                    indicator.max_price = *data.price();
+                    indicator.min_price = *data.price();
                 }
+
                 let key = data.trade_mint().to_string();
             if let Some(mut watching_feed) = xd_global_struct
                 .watching_bsc_mint_feed_info
                 .get_mut(key.as_str())
             {
                 let feed = watching_feed.value_mut();
-                if feed.is_black_source>0{
-                    need_sell=true;
-                    sell_reason += format!("命中拉黑卖出  ,拉黑类型 {} |",feed.is_black_source.clone()).as_str();
+                if feed.is_black_source > 0 {
+                    need_sell = true;
+                    sell_reason += &format!("命中拉黑卖出,拉黑类型{}|", feed.is_black_source);
                 }
 
-            
+                let cfg = SellConditionsConfig::default(); //&*SELL_CONFIG;
+                let current_miltime = *data.trade_miltime();
+                let current_price = *data.price();
+                let current_nowsol = *data.post_sol_amount();
+                let current_trade_amount = *data.trade_sol_amount(); // 始终为正
+                let is_sell_trade = data.trade_type() == "sell";
+                let buy_price = indicator.start_price; // 买入时的价格
+                let buy_time = indicator.open_time;    // 买入时的时间(毫秒)
 
-                let current=data.trade_miltime().clone();
-                let open_last_time = current.saturating_sub(indicator.open_time);
-
+                // 更新价格极值
                 let rate;
-                if *data.price() != 0.0 {
-                    rate = 100.0 * (*data.price() / indicator.start_price - 1.0);
+                if current_price != 0.0 {
+                    rate = 100.0 * (current_price / buy_price - 1.0);
                     if rate < -60.0 {
                         indicator.rate = 0.0;
+                        indicator.swap_cnt += 1;
                         return Some(data);
                     }
                     indicator.rate = rate;
                 } else {
                     rate = indicator.rate;
                 }
+
+                if current_price > indicator.max_price {
+                    indicator.max_price = current_price;
+                }
+                if current_price < indicator.min_price || indicator.min_price == 0.0 {
+                    indicator.min_price = current_price;
+                }
                 indicator.max_rate = indicator.max_rate.max(rate);
+
+                // 统计买卖单
                 if data.trade_type() == "buy" {
-                    if *data.trade_sol_amount() > 0.4 {
+                    if current_trade_amount > 0.4 {
                         indicator.big_buy_cnt += 1;
                     } else {
                         indicator.small_buy_cnt += 1;
                     }
                 }
-
-                if data.trade_type() == "sell"  {
-                    if *data.trade_sol_amount() > 1.0 {
+                if data.trade_type() == "sell" {
+                    if current_trade_amount > 1.0 {
                         indicator.big_sell_cnt += 1;
                     } else {
                         indicator.small_sell_cnt += 1;
                     }
                 }
-               if *data.price() > indicator.max_price {
-                        indicator.max_price = *data.price();
+
+                indicator.swap_cnt += 1;
+
+                // 计算当前盈亏比例 (与Python一致: (current_price - buy_price) / buy_price)
+                let current_profit_rate = if buy_price > 0.0 {
+                    (current_price as f64 - buy_price as f64) / buy_price as f64
+                } else {
+                    0.0
+                };
+
+                // 最大盈利率 (比例，非百分比)
+                let max_profit_rate = if buy_price > 0.0 {
+                    (indicator.max_price as f64 - buy_price as f64) / buy_price as f64
+                } else {
+                    0.0
+                };
+
+                // 更新最低盈利率（用于反弹卖出检测）
+                if indicator.min_profit_rate > current_profit_rate {
+                    indicator.min_profit_rate = current_profit_rate;
                 }
-                if *data.price() < indicator.min_price || indicator.min_price == 0.0 {
-                        indicator.min_price = *data.price();
-                }
+                // 检查是否曾经亏损超过阈值
+                let rebound_min_loss = cfg.rebound_min_loss_pct / 100.0;
+                let has_experienced_loss = indicator.min_profit_rate <= -rebound_min_loss;
 
-                indicator.swap_cnt+=1;
-                //回撤
-                let drawdown_rate= (indicator.max_price - *data.price())/indicator.max_price*100.0;
-
-                //反弹比例
-                let rebound_rate= (*data.price() - indicator.min_price)/indicator.min_price*100.0;
-                //
-
-
-                if indicator.min_price!=*data.price()  &&  drawdown_rate >3.0 && data.trade_type()=="sell"  {
-                    sell_reason += format!("回撤超过3% {:.2}%|",drawdown_rate).as_str();
+                // =============================================================
+                // 条件1: 市值止盈
+                // Python: if current_nowsol >= max_nowsol_sell: return "市值止盈"
+                // =============================================================
+                if current_nowsol >= cfg.max_nowsol_sell {
+                    sell_reason += &format!("市值止盈(nowsol={:.2}>={})|", current_nowsol, cfg.max_nowsol_sell);
                     need_sell = true;
                 }
 
-                if indicator.rate < -3.0 && (*data.price() < indicator.sell_min_price && indicator.sell_min_price>0.0 )  {
-                        sell_reason += format!("亏损3% {:.2}%|", indicator.rate).as_str();
-                        need_sell = true;
-                }
-                if indicator.big_sell_cnt>=2  &&  drawdown_rate >3.0 && data.trade_type()=="sell"  {
-                    sell_reason += format!("回撤超过3% {:.2}%|",drawdown_rate).as_str();
+                // =============================================================
+                // 条件1.5: 盈利率止盈
+                // Python: if profit_rate_sell_enabled and current_profit_rate >= profit_rate_sell_threshold:
+                //             return "盈利率止盈"
+                // =============================================================
+                if !need_sell && cfg.profit_rate_sell_enabled && current_profit_rate >= cfg.profit_rate_sell_threshold {
+                    sell_reason += &format!(
+                        "盈利率止盈(盈利{:.2}%>={:.0}%)|",
+                        current_profit_rate * 100.0,
+                        cfg.profit_rate_sell_threshold * 100.0
+                    );
                     need_sell = true;
                 }
 
-                if indicator.swap_cnt>=10  && indicator.max_rate<10.0 && drawdown_rate >2.0 && data.trade_type()=="sell"  {
-                    sell_reason += format!("回撤超过2% {:.2}%|",drawdown_rate).as_str();
-                    need_sell = true;
+                // =============================================================
+                // 条件1.6: 卖压止损
+                // Python: if sell_pressure_enabled:
+                //           检查近N单是否全是卖单，或总和 < 阈值
+                // =============================================================
+                if !need_sell && cfg.sell_pressure_enabled {
+                    let prepare_trades = &watching_feed.prepareTrade;
+                    let lookback = cfg.sell_pressure_lookback.min(prepare_trades.len());
+                    
+                    if lookback >= cfg.sell_pressure_lookback {
+                        let mut all_sell = true;
+                        let mut total_sum: f32 = 0.0;
+                        
+                        for pt in prepare_trades.iter().take(lookback) {
+                            // is_buy 为 false 表示卖单
+                            if pt.is_buy {
+                                all_sell = false;
+                            }
+                            // 卖单为负，买单为正
+                            let amt = if pt.is_buy { pt.buy_amount } else { -pt.buy_amount };
+                            total_sum += amt;
+                        }
+                        
+                        if cfg.sell_pressure_all_sell && all_sell {
+                            sell_reason += &format!(
+                                "卖压止损(近{}单全是卖单)|",
+                                cfg.sell_pressure_lookback
+                            );
+                            need_sell = true;
+                        } else if total_sum < cfg.sell_pressure_sum_threshold {
+                            sell_reason += &format!(
+                                "卖压止损(近{}单总和{:.2}SOL<{:.1}SOL)|",
+                                cfg.sell_pressure_lookback, total_sum, cfg.sell_pressure_sum_threshold
+                            );
+                            need_sell = true;
+                        }
+                    }
                 }
 
-                if data.trade_miltime().saturating_sub(indicator.start_time)<3*1000{
-                    if indicator.big_buy_cnt>2 && indicator.rate>15.0{
-                        sell_reason += format!("短周期卖单% {:.2}%|",indicator.rate).as_str();
+                // =============================================================
+                // 条件2: 亏损止损
+                // Python: if current_profit_rate <= -loss_percentage:
+                //             if current_price < min_price_before_buy: return "亏损止损"
+                // min_price_before_buy = 买入前 lookback_trades_for_min_price 笔交易的最低价
+                // prepareTrade 以 push_front 方式存储，index 0 = 最新
+                // 买入时的历史交易在 prepareTrade 中较靠后的位置
+                // =============================================================
+                if !need_sell && current_profit_rate <= -(cfg.loss_percentage) {
+                    // 从 prepareTrade 中获取买入前的最低价
+                    // prepareTrade[0] 是最新交易，越往后越早
+                    // 我们需要找到买入时间之前的交易，取最近 lookback 笔的最低价
+                    let mut min_price_before_buy: Option<f64> = None;
+                    // if let Some(lianghua_watch) = WATCH_CACHE.get(data.trade_mint()) {
+                        let prepare_trades = &feed.prepareTrade;
+                        let mut count = 0usize;
+                        for pt in prepare_trades.iter() {
+                            // 只看买入时间之前的交易
+                            if pt.swap_time >= buy_time {
+                                continue;
+                            }
+                            // 通过 post_sol_amount 估算价格（因为 PrepareTradeMetrics 没有 price 字段）
+                            // 使用 post_sol_amount 作为价格代理，或者如果有其他字段
+                            // 注意: PrepareTradeMetrics 没有 price 字段，这里使用 indicator 记录的 sell_min_price
+                            // 作为替代方案，我们记录买入前的最低价到 indicator 中
+                            count += 1;
+                            if count >= cfg.lookback_trades_for_min_price {
+                                break;
+                            }
+                        }
+                    // }
+                    // 使用 indicator.sell_min_price 作为买入前最低价的代理
+                    // (在买入时应该已经计算并存储了)
+                    if indicator.sell_min_price > 0.0 && current_price < indicator.sell_min_price {
+                        sell_reason += &format!(
+                            "亏损止损(rate={:.2}%,price={:.6}<min={:.6})|",
+                            current_profit_rate * 100.0, current_price, indicator.sell_min_price
+                        );
                         need_sell = true;
                     }
                 }
 
+                // =============================================================
+                // 条件3+4: 回撤止损 (低利润/高利润) - 带拐点检测
+                // Python:
+                //   需要满足：最小持有时间 且 当前盈利 >= 最小盈利阈值
+                //   if max_price > buy_price and hold_time_ms >= retracement_min_hold_ms 
+                //      and current_profit_rate >= retracement_min_profit:
+                //     retracement = (max_price - current_price) / max_price
+                //     使用窗口判断拐点：如果窗口中间位置是最大值，则为拐点
+                //     拐点次数 >= retracement_min_count 时触发卖出
+                // =============================================================
+                let hold_time_ms_for_retracement = current_miltime.saturating_sub(buy_time);
+                if !need_sell && indicator.max_price as f64 > buy_price as f64 
+                    && hold_time_ms_for_retracement >= cfg.retracement_min_hold_ms as u128
+                    && current_profit_rate >= cfg.retracement_min_profit {
+                    let retracement = (indicator.max_price as f64 - current_price as f64)
+                        / indicator.max_price as f64;
 
+                    // 判断当前回撤阈值
+                    let retracement_threshold = if max_profit_rate < cfg.high_profit_threshold {
+                        cfg.retracement_low_profit
+                    } else {
+                        cfg.retracement_high_profit
+                    };
 
+                    if retracement >= retracement_threshold {
+                        // 从 price_history 历史数据计算拐点次数
+                        let window_size = cfg.retracement_inflection_window;
+                        let mut inflection_count = 0usize;
+                        
+                        // 获取最近的价格历史
+                        let price_history: Vec<f64> = feed.price_history
+                            .iter()
+                            .take(20)
+                            .cloned()
+                            .collect();
+                        
+                        // 检测拐点：滑动窗口检测局部最大值
+                        if price_history.len() >= window_size {
+                            for i in 0..=(price_history.len() - window_size) {
+                                let window: Vec<f64> = price_history[i..i+window_size].to_vec();
+                                let mid_index = window_size / 2;
+                                if let Some(&mid_price) = window.get(mid_index) {
+                                    let max_in_window = window.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+                                    let first_price = window.first().copied().unwrap_or(0.0);
+                                    let last_price = window.last().copied().unwrap_or(0.0);
+                                    
+                                    // 如果中间位置是窗口内最大值，则认为是拐点
+                                    if (mid_price - max_in_window).abs() < 1e-10
+                                        && mid_price > first_price 
+                                        && mid_price > last_price 
+                                    {
+                                        inflection_count += 1;
+                                    }
+                                }
+                            }
+                        }
 
-
-                //止盈逻辑
-                // if rebound_rate > 130.0 && data.trade_type() == "sell" {
-                //     sell_reason += format!("反弹超过130% {:.2}%|", rebound_rate).as_str();
-                //     need_sell = true;
-                // }
-
-
-                if *data.post_sol_amount()>70.0  {
-                    sell_reason += format!("高市值70 {:.2}%|", *data.post_sol_amount()).as_str();
-                    need_sell = true;
+                        // 拐点计数达到阈值则卖出
+                        if inflection_count >= cfg.retracement_min_count {
+                            if max_profit_rate < cfg.high_profit_threshold {
+                                sell_reason += &format!(
+                                    "回撤止损(低)(retracement={:.2}%>={:.2}%,max_profit={:.2}%,拐点{}次)|",
+                                    retracement * 100.0,
+                                    cfg.retracement_low_profit * 100.0,
+                                    max_profit_rate * 100.0,
+                                    inflection_count
+                                );
+                            } else {
+                                sell_reason += &format!(
+                                    "回撤止损(高)(retracement={:.2}%>={:.2}%,max_profit={:.2}%,拐点{}次)|",
+                                    retracement * 100.0,
+                                    cfg.retracement_high_profit * 100.0,
+                                    max_profit_rate * 100.0,
+                                    inflection_count
+                                );
+                            }
+                            need_sell = true;
+                        }
+                    }
                 }
 
-            //    if *data.trade_sol_amount() < 1.5  &&  (indicator.big_sell_cnt<2 && indicator.small_sell_cnt<3)  {
-            //         need_sell = false;
-            //     }
+                // =============================================================
+                // 条件5: 时间止损
+                // Python: hold_time_seconds = (current_time - buy_time) / 1000
+                //         if hold_time_seconds > max_hold_seconds: return "时间止损"
+                // =============================================================
+                if !need_sell {
+                    let hold_time_ms = current_miltime.saturating_sub(buy_time);
+                    let hold_time_seconds = hold_time_ms / 1000;
+                    if hold_time_seconds > cfg.max_hold_time_seconds as u128 {
+                        sell_reason += &format!(
+                            "时间止损(hold={}s>{}s)|",
+                            hold_time_seconds, cfg.max_hold_time_seconds
+                        );
+                        need_sell = true;
+                    }
+                }
 
+                // =============================================================
+                // 条件6: 冷淡期卖出
+                // Python:
+                //   if quiet_period_enabled and current_tradeamount < 0:
+                //     只有在持有时间 >= quiet_period_seconds 后才检查
+                //     在过去 quiet_period_seconds 秒内，如果没有金额 >= quiet_period_min_amount 的交易
+                //     则卖出
+                // =============================================================
+                if !need_sell && cfg.quiet_period_enabled && is_sell_trade {
+                    let hold_time_ms = current_miltime.saturating_sub(buy_time);
+                    let hold_time_seconds = hold_time_ms / 1000;
+                    
+                    // 只有持有时间超过冷淡期时间窗口后才检查
+                    if hold_time_seconds >= cfg.quiet_period_seconds as u128 {
+                        let quiet_window_ms = (cfg.quiet_period_seconds as u128) * 1000;
+                        let quiet_start_time = current_miltime.saturating_sub(quiet_window_ms);
+
+                        let mut has_large_trade = false;
+
+                        // prepareTrade 以 push_front 存储: index 0 = 最新交易
+                        // 遍历历史交易，查找窗口内是否有大单
+                        let prepare_trades = &feed.prepareTrade;
+                        for pt in prepare_trades.iter() {
+                            // 跳过当前交易本身 (swap_time == current_miltime 的)
+                            if pt.swap_time >= current_miltime {
+                                continue;
+                            }
+                            // 超出时间窗口则停止
+                            if pt.swap_time < quiet_start_time {
+                                break;
+                            }
+                            // 只看买入之后的交易
+                            if pt.swap_time <= buy_time {
+                                break;
+                            }
+                            // 检查金额是否 >= 阈值 (buy_amount 始终为正)
+                            if pt.buy_amount >= cfg.quiet_period_min_amount {
+                                has_large_trade = true;
+                                break;
+                            }
+                        }
+
+                        if !has_large_trade {
+                            sell_reason += &format!(
+                                "冷淡期卖出(持有{}s,{}s内无>={:.2}SOL交易)|",
+                                hold_time_seconds, cfg.quiet_period_seconds, cfg.quiet_period_min_amount
+                            );
+                            need_sell = true;
+                        }
+                    }
+                }
+
+                // =============================================================
+                // 执行卖出
+                // =============================================================
+                let open_last_time = current_miltime.saturating_sub(indicator.open_time);
 
                 if need_sell && indicator.mint_status == MintStatus::IsBuyed {
-                    // build detailed diagnostic info for logging
-                    let recent_rates = 0.0;
-
                     let delta_max = indicator.max_rate - indicator.rate;
                     let sell_reason_details = format!(
-                        "reason_tags={} | rate={:.2}% | max_rate={:.2}% | delta={:.2}% | open_last_time={}ms | swap_cnt={} | big_buy_cnt={} | small_buy_cnt={} | big_sell_cnt={} | small_sell_cnt={} | continous_sell_cnt={} | continous_buy_cnt={} | sell_max_price={:.6} | sell_min_price={:.6} | last_big_buy_time={} | recent_rates=[{}]",
+                        "reason_tags={} | rate={:.2}% | max_rate={:.2}% | delta={:.2}% | open_last_time={}ms | swap_cnt={} | big_buy_cnt={} | small_buy_cnt={} | big_sell_cnt={} | small_sell_cnt={} | continous_sell_cnt={} | continous_buy_cnt={} | sell_max_price={:.6} | sell_min_price={:.6} | last_big_buy_time={} | profit_rate={:.4}% | max_profit_rate={:.4}%",
                         sell_reason,
                         indicator.rate,
                         indicator.max_rate,
@@ -175,58 +507,43 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                         indicator.sell_max_price,
                         indicator.sell_min_price,
                         indicator.last_big_buy_time,
-                        recent_rates
+                        current_profit_rate * 100.0,
+                        max_profit_rate * 100.0
                     );
-
 
                     tracing::warn!(
                                 "[{}]{} {},命中卖出策略 {}，当前涨幅:{}，最大涨幅{},用户{},购买金额{},大单数量{},小单数量{},卖单数量{},小卖单数量{} ",
                                 data.trade_mint().to_string(),
-                                                                beijing_time,
-
+                                beijing_time,
                                 open_last_time,
                                 sell_reason,
                                 indicator.rate,
                                 indicator.max_rate,
                                 data.user().to_string(),
-                                *data.trade_sol_amount()
-                                ,indicator.big_buy_cnt
-                                ,indicator.small_buy_cnt
-                                ,indicator.big_sell_cnt
-                                ,indicator.small_sell_cnt
+                                *data.trade_sol_amount(),
+                                indicator.big_buy_cnt,
+                                indicator.small_buy_cnt,
+                                indicator.big_sell_cnt,
+                                indicator.small_sell_cnt
                             );
 
                     if !indicator.is_fake_trade {
-                        indicator.my_sell_time=*data.trade_miltime();
+                        indicator.my_sell_time = *data.trade_miltime();
                         UNIFY_SELL_CHANNEL
                             .sender
                             .send(TradeMessage::AmountMessage(data.clone(), 0.2, 0, 0))
                             .unwrap();
                         indicator.mint_status = MintStatus::IsSelling;
                     } else {
-
-                            if indicator.my_sell_time==0{
-                                indicator.my_sell_time=*data.trade_miltime();
+                            if indicator.my_sell_time == 0 {
+                                indicator.my_sell_time = *data.trade_miltime();
                             }
 
-
-
                             indicator.mint_status = MintStatus::IsSelling;
-                            //判断是否存在indicator.buy_snapshot，存在则把买入快照信息打印出来，另外把当前的卖出数据，也打印出来
+
                             if let Some(buy_snapshot) = &indicator.buy_snapshot {
-                                // pub post_sol: f32,//当前市值
-                                // pub open_time_stamp: u128,//距离开始时间
-                                // pub buy_reason: String,//买入理由
-                                // pub trade_sol: f32,//买入金额
-                                // pub buy_price: f64,//买入价格
-                                // pub last_trade_time: u128,//距离上一交易时间
-                                // pub compute_unit_price: u64,//买点触发特征
-                                // pub swap_trade_buy_cnt: usize,//近期买单次数
-                                // pub swap_trade_sell_cnt: usize,//近期卖单次数
-                                // pub total_swap_sol: f32,//近期总交易量
-                                // pub cv: f64,//近期交易量波动率
-                                let log_msg=format!(
-                                    "买入快照信息,交易币种:{} 开仓时间戳:{}，买入价格:{}，买入金额:{}，买入理由:{}，买入后市值:{}，买入时计算单价:{}，买入时买单次数:{}，买入时卖单次数:{}，买入时总交易量:{}，买入时交易量波动率:{};卖出时信息： 当前价格:{}，当前涨幅:{}，最大涨幅:{}，大单数量:{}，小单数量:{}，卖单数量:{}，小卖单数量:{} ",
+                                let log_msg = format!(
+                                    "买入快照信息,交易币种:{} 开仓时间戳:{}，买入价格:{}，买入金额:{}，买入理由:{}，买入后市值:{}，买入时计算单价:{}，买入时买单次数:{}，买入时卖单次数:{}，买入时总交易量:{}，买入时交易量波动率:{};卖出时信息： 当前价格:{}，当前涨幅:{}，最大涨幅:{}，大单数量:{}，小单数量:{}，卖单数量:{}，小卖单数量:{},卖出理由:{} ",
                                     data.trade_mint().to_string(),
                                     buy_snapshot.open_time_stamp,
                                     buy_snapshot.buy_price,
@@ -244,9 +561,9 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                                     indicator.big_buy_cnt,
                                     indicator.small_buy_cnt,
                                     indicator.big_sell_cnt,
-                                    indicator.small_sell_cnt
+                                    indicator.small_sell_cnt,
+                                    sell_reason
                                 );
-                                // 将 log_msg 写到日志文件0113.log（确保文件存在并捕获错误，避免 unwrap 导致 panic）
 
                                 if let Ok(mut file) = std::fs::OpenOptions::new()
                                     .create(true)
@@ -260,36 +577,9 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                                 } else {
                                     tracing::error!("无法打开或创建日志文件: 日志文件0113.log");
                                 }
-
                             }
-
-
-
-
-
-                            // if indicator.buy_snapshot {
-
-                            // }
-
-                            // tracing::warn!(
-                            //     "[{}]{} {},卖出滑点300毫秒，{} {} {} , 价格{}]>{},比例{}=>{},大单数量{},小单数量{},卖单数量{},小卖单数量{} ",
-                            //     data.trade_mint().to_string(),
-                            //     beijing_time,
-                            //     open_last_time,
-                            //     data.user(),
-                            //     data.trade_type(),
-                            //     data.trade_sol_amount(),
-                            //     data.price(),
-                            //     indicator.hit_price,
-                            //     indicator.rate,
-                            //     indicator.max_rate,
-                            //     indicator.big_buy_cnt,
-                            //     indicator.small_buy_cnt,
-                            //     indicator.big_sell_cnt,
-                            //     indicator.small_sell_cnt
-                            // );
-
                     }
+
                     if rate > 0.0 {
                         indicator.win_last_time = open_last_time;
                     } else {
@@ -297,53 +587,49 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                     }
                     indicator.open_last_time = open_last_time;
                     indicator.end_post_sol = *data.post_sol_amount();
-                    indicator.close_time = current;
+                    indicator.close_time = current_miltime;
                     indicator.is_selling = true;
                     if indicator.is_fake_trade {
                         indicator.is_selled = true;
                     }
-                    indicator.last_swap_time=data.trade_miltime().clone();
+                    indicator.last_swap_time = data.trade_miltime().clone();
                 }
-}
-             if  (indicator.is_fake_trade && indicator.mint_status == MintStatus::IsSelling ){
+            }
+
+            // 处理正在卖出状态的确认
+            if indicator.is_fake_trade && indicator.mint_status == MintStatus::IsSelling {
                 let self_wallets = vec![
-                // "4VRpAHcpW6CrpLdxrBYkH6w959Zntnzyt4vfaFr56RKK".to_string(),
-                // "GNr8d4mYvxTSR48JZNPaTqjUB2Wb3Hp7MPpYy11AX8hS".to_string(),
-                // "GuKBpnQhP27JEP3QNna1jKLMeMRvZnqCxMAsPDso6Xvt".to_string(),
-                // "9anmiHy6TQsoeLdBty2EExZqUYiKYeWSjaRoznRBCu5G".to_string(),
-                // "D4ki5hVvjvuMmHyjX62rzzzkAfQycShwUKtQFouFbkCE".to_string(),
-                "4WEbzvm5RzSnBB5jWbXoTyRg4RFkkX5XmEf2UxR4LcDR".to_string(),
-            ];
+                    "4WEbzvm5RzSnBB5jWbXoTyRg4RFkkX5XmEf2UxR4LcDR".to_string(),
+                ];
 
-                if self_wallets.contains(&data.user().to_string() )|| data.user().to_string() == "4VRpAHcpW6CrpLdxrBYkH6w959Zntnzyt4vfaFr56RKK".to_string()|| *data.post_sol_amount() < 1.5 || (indicator.my_sell_time > 0 &&  *data.trade_miltime()>indicator.my_sell_time+100){
-                            indicator.mint_status = MintStatus::IsSelled;
-                            // if  self_wallets.contains(&data.user().to_string() ) && indicator.buy_sol_amount>0.0{
-                            //     let sell_sol_amount=*data.trade_sol_amount();
-                            //     indicator.rate=(sell_sol_amount/indicator.buy_sol_amount*100.0-100.0) as f64;
-                            // }
-                            indicator.real_sell_price=*data.price();
-                            indicator.real_sell_time=*data.trade_miltime();
-                            tracing::warn!(
-                                "[{}] {} {} 卖出滑点300毫秒结束，当前最终涨幅:{}，最大涨幅{},用户{},购买金额{}-{} 当前价格 {} ,买入价格 {} ",
-                                data.trade_mint().to_string(),
-                                beijing_time,
-                                open_last_time,
-                                indicator.rate,
-                                indicator.max_rate,
-                                data.user().to_string(),
-                                *data.trade_sol_amount(),
-                                indicator.buy_sol_amount,
-                                *data.price(),
-                                indicator.start_price
-                            );
+                let open_last_time = data.trade_miltime().saturating_sub(indicator.open_time);
 
-                }else{
+                if self_wallets.contains(&data.user().to_string())
+                    || data.user().to_string() == "4VRpAHcpW6CrpLdxrBYkH6w959Zntnzyt4vfaFr56RKK"
+                    || *data.post_sol_amount() < 1.5
+                    || (indicator.my_sell_time > 0 && *data.trade_miltime() > indicator.my_sell_time + 100)
+                {
+                    indicator.mint_status = MintStatus::IsSelled;
+                    indicator.real_sell_price = *data.price();
+                    indicator.real_sell_time = *data.trade_miltime();
+                    tracing::warn!(
+                        "[{}] {} {} 卖出滑点300毫秒结束，当前最终涨幅:{}，最大涨幅{},用户{},购买金额{}-{} 当前价格 {} ,买入价格 {} ",
+                        data.trade_mint().to_string(),
+                        beijing_time,
+                        open_last_time,
+                        indicator.rate,
+                        indicator.max_rate,
+                        data.user().to_string(),
+                        *data.trade_sol_amount(),
+                        indicator.buy_sol_amount,
+                        *data.price(),
+                        indicator.start_price
+                    );
+                } else {
                     let rate1 = 100.0 * (*data.price() / indicator.start_price - 1.0);
                     indicator.rate = rate1;
-                    indicator.hit_price=*data.price();
-                    // indicator.my_sell_time=*data.trade_miltime();
+                    indicator.hit_price = *data.price();
                 }
-
             }
         }
 

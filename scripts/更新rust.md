@@ -18,3 +18,25 @@ pub struct PrepareTradeMetrics {
     pub post_sol_amount: f32,       //当前市值，等同mint_temp.log里的字段nowsol
 }
 
+
+
+
+
+将scripts/rules/rule1_optimize.py variant_find_sell_signal 方法涉及到的交易特征，需要也通过rust代码进行实现，并且支持从json里提取卖入条件的规则。只更改need_sell和sell_reason的部分
+
+对于rust代码，我提供了部分字段解释，你需要参考
+lianghua_watch.prepareTrade 当接受到一条交易信息时，会将该交易通过push_front塞入到 lianghua_watch.prepareTrade
+
+具体代码参考：
+lianghua_watch.prepareTrade.push_front(prepareTradeMetrics); 
+
+#[derive(Debug, Default, Clone)]
+#[allow(dead_code)]
+pub struct PrepareTradeMetrics {
+    pub mint: String,
+    pub swap_time: u128,//交易时间，单位毫秒，等同于mint_temp.log里的字段tradetime
+    pub trade_type: String,         // buy or sell
+    pub buy_amount: f32,            //交易金额都为正，等同于 mint_temp.log里的tradeamount 
+    pub post_sol_amount: f32,       //当前市值，等同mint_temp.log里的字段nowsol
+}
+

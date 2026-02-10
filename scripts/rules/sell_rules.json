@@ -1,0 +1,25 @@
+{
+    "sell_conditions": {
+        "max_nowsol_sell": 70.0,
+        "loss_percentage": 0.05,
+        "lookback_trades_for_min_price": 7,
+        "retracement_low_profit": 0.05,
+        "retracement_high_profit": 0.05,
+        "high_profit_threshold": 0.30,
+        "max_hold_time_seconds": 400,
+        "quiet_period_enabled": true,
+        "quiet_period_seconds": 40,
+        "quiet_period_min_amount": 0.5
+    },
+    "_comment": "字段说明",
+    "_max_nowsol_sell": "市值止盈: 当前市值(nowsol) >= 该值时卖出",
+    "_loss_percentage": "亏损止损: 当前亏损比例 >= 该值 且 当前价格 < 买入前lookback笔最低价时卖出",
+    "_lookback_trades_for_min_price": "亏损止损: 往前看多少笔交易取最低价",
+    "_retracement_low_profit": "回撤止损(低利润): 最大盈利率 < high_profit_threshold时, 从最高价回撤比例 >= 该值时卖出",
+    "_retracement_high_profit": "回撤止损(高利润): 最大盈利率 >= high_profit_threshold时, 从最高价回撤比例 >= 该值时卖出",
+    "_high_profit_threshold": "区分高低利润的阈值(比例,0.30=30%)",
+    "_max_hold_time_seconds": "时间止损: 持仓超过该秒数时卖出",
+    "_quiet_period_enabled": "冷淡期卖出: 是否启用",
+    "_quiet_period_seconds": "冷淡期卖出: 往前看多少秒内无大单则卖出",
+    "_quiet_period_min_amount": "冷淡期卖出: 大单金额阈值(SOL)"
+}
