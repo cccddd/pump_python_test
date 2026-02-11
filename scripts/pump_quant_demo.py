@@ -11,28 +11,28 @@ STRATEGY_CONFIG = pump.STRATEGY_CONFIG
 # =============================================================================
 BUY_CONDITIONS_CONFIG = {
     # 条件1: 距离创币时间（分钟）
-    'TIME_FROM_CREATION_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
-    'TIME_FROM_CREATION_MINUTES': 0,  # 距离创币时间 >= 2 分钟 (online模式使用)
+    'TIME_FROM_CREATION_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
+    'TIME_FROM_CREATION_MINUTES': 2,  # 距离创币时间 >= 2 分钟 (online模式使用)
     'TIME_FROM_CREATION_RANGE': (2, 4),  # 距离创币时间范围（分钟）(online模式使用)
     'TIME_FROM_CREATION_BUCKETS': [0, 1, 2, 3, 5, 10, 15, 20, 30, 60],  # 创币时间分桶边界（分钟）
     # 条件2: 当前市值范围（nowsol字段）
     'NOWSOL_RANGE': (5, 35),  # nowsol 在 [5, 35] 范围内
 
     # 条件3: 当前交易单金额范围
-    'TRADE_AMOUNT_RANGE': (0.7, 2.0),  # 交易金额绝对值在 [0.3, 2.0] 范围内
+    'TRADE_AMOUNT_RANGE': (0.3, 1.0),  # 交易金额绝对值在 [0.3, 2.0] 范围内
 
     # 条件4: 当前交易单距离上一个交易单的时间差（毫秒）
     # 'off' - 禁用此条件
     # 'online' - 启用此条件，进行实际过滤
-    # 'debug' - 调试模式，只收集统计数据，不过滤
+    # 'debug' - 调试模式，只收集统计pu数据，不过滤
     'TIME_DIFF_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
     'TIME_DIFF_FROM_LAST_TRADE_RANGE': (2000, 50000),  # 时间差在 [2000, 10000] 毫秒范围内 - online模式使用
     'TIME_DIFF_BUCKETS': [0, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000],  # 时间差分桶边界（毫秒）
 
     # 条件5: 过滤后的前N笔交易总和范围
-    'FILTERED_TRADES_MIN_AMOUNT': 0.1,  # 过滤掉交易金额绝对值小于此值的交易
+    'FILTERED_TRADES_MIN_AMOUNT': 0.2,  # 过滤掉交易金额绝对值小于此值的交易
     'FILTERED_TRADES_COUNT': 10,  # 取前N笔有效交易
-    'FILTERED_TRADES_SUM_RANGE': (-5.0, -3.0),  # 交易金额总和范围
+    'FILTERED_TRADES_SUM_RANGE': (-6.0, -2.0),  # 交易金额总和范围
     
     # 条件6: 当前交易类型
     # 'buy' - 只匹配买入交易 (tradeamount > 0)
@@ -167,8 +167,8 @@ SELL_CONDITIONS_CONFIG = {
     'PROFIT_RATE_SELL_THRESHOLD': 1.5,  # 盈利率 >= 150% 时直接卖出
 
     # 亏损止损
-    'LOSS_PERCENTAGE': 0.05,  # 亏损达到 5% 时触发止损检查
-    'LOOKBACK_TRADES_FOR_MIN_PRICE': 20,  # 买入前N笔交易用于计算最小价格
+    'LOSS_PERCENTAGE': 0.03,  # 亏损达到 3% 时触发止损检查
+    'LOOKBACK_TRADES_FOR_MIN_PRICE': 5,  # 买入前N笔交易用于计算最小价格
     
     # 回撤止损
     'RETRACEMENT_LOW_PROFIT': 0.03,  # 最大盈利 < 50% 时，回撤 3% 卖出
