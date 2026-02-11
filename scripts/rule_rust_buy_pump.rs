@@ -147,34 +147,34 @@ impl Default for BuyConditionsConfig {
         Self {
             // 条件1: 距离创币时间
             time_from_creation_check_mode: CheckMode::Debug,
-            time_from_creation_minutes: 0,
-            time_from_creation_range: (0.0, 100.0),
+            time_from_creation_minutes: 5,
+            time_from_creation_range: (0.0, 5.0),
             
             // 条件2: 当前市值范围
             nowsol_check_mode: CheckMode::Debug,
-            nowsol_range: (100.0, 250.0),
+            nowsol_range: (5.0, 35.0),
             
             // 条件3: 当前交易单金额范围
             trade_amount_check_mode: CheckMode::Debug,
-            trade_amount_range: (4.0, 11.0),
+            trade_amount_range: (0.5, 1.0),
             
             // 条件4: 时间差检查
-            time_diff_check_mode: CheckMode::Debug,
-            time_diff_from_last_trade_range: (2000, 50000),
+            time_diff_check_mode: CheckMode::Online,
+            time_diff_from_last_trade_range: (1000, 50000),
             
             // 条件5: 过滤后的前N笔交易总和范围
             filtered_trades_check_mode: CheckMode::Debug,
-            filtered_trades_min_amount: 0.05,
-            filtered_trades_count: 20,
-            filtered_trades_sum_range: (-3.0, 10.0),
+            filtered_trades_min_amount: 0.2,
+            filtered_trades_count: 10,
+            filtered_trades_sum_range: (-1.0, 1.0),
             
             // 条件6: 当前交易类型
-            trade_type: TradeTypeFilter::Sell,
+            trade_type: TradeTypeFilter::Buy,
             
             // 条件7: 最大金额检查
             max_amount_check_mode: CheckMode::Debug,
-            max_amount_min_threshold: 0.05,
-            max_amount_lookback_count: 15,
+            max_amount_min_threshold: 0.2,
+            max_amount_lookback_count: 5,
             
             // 条件8: 波动率检查
             volatility_lookback_count: 15,
@@ -193,12 +193,12 @@ impl Default for BuyConditionsConfig {
             amount_volatility_range: (0.2, 1.0),
             
             // 条件9: 价格比例检查
-            price_ratio_check_mode: CheckMode::Debug,
+            price_ratio_check_mode: CheckMode::Online,
             price_ratio_lookback_count: 10,
-            price_ratio_range: (0.0, 3.0),
+            price_ratio_range: (3.0, 50.0),
             
             // 条件10: 买单数量检查
-            buy_count_check_mode: CheckMode::Online,
+            buy_count_check_mode: CheckMode::Debug,
             buy_count_lookback_count: 30,
             buy_count_min: 15,
             
@@ -208,7 +208,7 @@ impl Default for BuyConditionsConfig {
             sell_count_min: 3,
             
             // 条件12: 大单占比检查
-            large_trade_ratio_check_mode: CheckMode::Online,
+            large_trade_ratio_check_mode: CheckMode::Debug,
             large_trade_ratio_lookback: 30,
             large_trade_threshold: 2.0,
             large_trade_ratio_range: (0.0, 0.3),
@@ -217,27 +217,27 @@ impl Default for BuyConditionsConfig {
             small_trade_ratio_check_mode: CheckMode::Online,
             small_trade_ratio_lookback: 20,
             small_trade_threshold: 0.2,
-            small_trade_ratio_range: (0.25, 1.0),
+            small_trade_ratio_range: (0.2, 1.0),
             
             // 条件14: 连续大额买单检查 (range模式)
             consecutive_buy_check_mode: CheckMode::Debug,
-            consecutive_buy_threshold: 1.0,
+            consecutive_buy_threshold: 0.3,
             consecutive_buy_range: (0, 2),
             
             // 条件15: 连续大额卖单检查 (range模式)
-            consecutive_sell_check_mode: CheckMode::Online,
+            consecutive_sell_check_mode: CheckMode::Debug,
             consecutive_sell_threshold: 0.1,
             consecutive_sell_range: (0, 2),
             
             // 条件16: 近N秒内交易单数量
             recent_trade_count_check_mode: CheckMode::Online,
-            recent_trade_count_window_seconds: 2,
-            recent_trade_count_range: (3, 70),
+            recent_trade_count_window_seconds: 15,
+            recent_trade_count_range: (0, 10),
             
             // 条件17: 近N单平均交易间隔时间
             avg_trade_interval_check_mode: CheckMode::Online,
-            avg_trade_interval_lookback_count: 15,
-            avg_trade_interval_range: (0, 7000),
+            avg_trade_interval_lookback_count: 7,
+            avg_trade_interval_range: (4000, 30000),
         }
     }
 }
@@ -417,12 +417,18 @@ pub fn check_buy_conditions(
     }
     
     // 条件9: 价格比例检查 (仅 Online 模式过滤)
-    // Python: if price_ratio_mode == 'online': 检查范围
+    // Python: if price_ratio_mode == 'online': 检查范围, None时返回None拒绝
     if cfg.price_ratio_check_mode == CheckMode::Online {
-        if let Some(ratio) = features.price_ratio {
-            let (min_r, max_r) = cfg.price_ratio_range;
-            if ratio < min_r || ratio > max_r {
-                reject_reason = format!("价格比例不在范围({:.2}%不在[{:.2}%,{:.2}%])", ratio, min_r, max_r);
+        match features.price_ratio {
+            Some(ratio) => {
+                let (min_r, max_r) = cfg.price_ratio_range;
+                if ratio < min_r || ratio > max_r {
+                    reject_reason = format!("价格比例不在范围({:.2}%不在[{:.2}%,{:.2}%])", ratio, min_r, max_r);
+                    return (false, reject_reason);
+                }
+            }
+            None => {
+                reject_reason = "价格比例数据不足".to_string();
                 return (false, reject_reason);
             }
         }
@@ -803,18 +809,21 @@ impl PipelineHandler for QtfyNewAmmBuyStrategyDemo {
                         .count();
 
                     // 计算大小单比例
-                    // Python: get_large_small_trade_ratio - 使用 max(large_lookback, small_lookback) 的交易
+                    // Python: get_large_small_trade_ratio - 大单和小单分别使用各自的 lookback
                     {
-                        let max_lookback = cfg.large_trade_ratio_lookback.max(cfg.small_trade_ratio_lookback).min(recent_trades.len());
-                        if max_lookback > 0 {
-                            let large = recent_trades.iter().take(max_lookback)
+                        let large_lookback = cfg.large_trade_ratio_lookback.min(recent_trades.len());
+                        if large_lookback > 0 {
+                            let large = recent_trades.iter().take(large_lookback)
                                 .filter(|rt| rt.buy_amount.abs() >= cfg.large_trade_threshold)
                                 .count();
-                            let small = recent_trades.iter().take(max_lookback)
+                            features.large_trade_ratio = Some(large as f64 / large_lookback as f64);
+                        }
+                        let small_lookback = cfg.small_trade_ratio_lookback.min(recent_trades.len());
+                        if small_lookback > 0 {
+                            let small = recent_trades.iter().take(small_lookback)
                                 .filter(|rt| (rt.buy_amount.abs()) < cfg.small_trade_threshold)
                                 .count();
-                            features.large_trade_ratio = Some(large as f64 / max_lookback as f64);
-                            features.small_trade_ratio = Some(small as f64 / max_lookback as f64);
+                            features.small_trade_ratio = Some(small as f64 / small_lookback as f64);
                         }
                     }
 

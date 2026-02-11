@@ -16,11 +16,11 @@ use serde::Deserialize;
 pub struct SellConditionsConfig {
     pub max_nowsol_sell: f32,           // 市值止盈阈值
     pub profit_rate_sell_enabled: bool, // 是否启用盈利率止盈
-    pub profit_rate_sell_threshold: f64, // 盈利率止盈阈值 (0.5 = 50%)
-    pub loss_percentage: f64,           // 亏损止损比例 (0.3 = 30%)
+    pub profit_rate_sell_threshold: f64, // 盈利率止盈阈值 (0.9 = 90%)
+    pub loss_percentage: f64,           // 亏损止损比例 (0.45 = 45%)
     pub lookback_trades_for_min_price: usize, // 买入前回看笔数取最低价
     pub retracement_low_profit: f64,    // 低利润回撤止损比例 (0.05 = 5%)
-    pub retracement_high_profit: f64,   // 高利润回撤止损比例 (0.1 = 10%)
+    pub retracement_high_profit: f64,   // 高利润回撤止损比例 (0.05 = 5%)
     pub high_profit_threshold: f64,     // 高低利润分界阈值 (0.4 = 40%)
     pub retracement_min_count: usize,   // 回撤区间内拐点次数阈值
     pub retracement_inflection_window: usize, // 拐点检测窗口大小
@@ -86,27 +86,27 @@ impl SellConditionsConfig {
     fn default() -> Self {
         Self {
             max_nowsol_sell: 300.0,
-            profit_rate_sell_enabled: true,   // 启用盈利率止盈
-            profit_rate_sell_threshold: 0.5,  // 盈利率 >= 50% 时直接卖出
-            loss_percentage: 0.30,            // 亏损达到 30% 时触发止损
-            lookback_trades_for_min_price: 20,
-            retracement_low_profit: 0.05,     // 最大盈利 < 40% 时，回撤 5% 卖出
-            retracement_high_profit: 0.10,    // 最大盈利 >= 40% 时，回撤 10% 卖出
-            high_profit_threshold: 0.40,      // 高盈利阈值 40%
-            retracement_min_count: 1,         // 拐点次数阈值
-            retracement_inflection_window: 5, // 拐点检测窗口大小
-            retracement_min_hold_ms: 60000,   // 回撤止损最小持有时间 60秒
-            retracement_min_profit: 0.05,     // 回撤止损最小盈利阈值 5%
-            sell_pressure_enabled: false,     // 是否启用卖压检测
-            sell_pressure_lookback: 10,       // 卖压检测近10单
-            sell_pressure_sum_threshold: -20.0, // 近10单总和 < -20 SOL 时卖出
-            sell_pressure_all_sell: false,    // 近10单全是卖单时卖出
-            max_hold_time_seconds: 6000,
+            profit_rate_sell_enabled: true,
+            profit_rate_sell_threshold: 0.9,    // 盈利率 >= 90% 时直接卖出
+            loss_percentage: 0.45,              // 亏损达到 45% 时触发止损
+            lookback_trades_for_min_price: 5,
+            retracement_low_profit: 0.05,       // 最大盈利 < 40% 时，回撤 5% 卖出
+            retracement_high_profit: 0.05,      // 最大盈利 >= 40% 时，回撤 5% 卖出
+            high_profit_threshold: 0.40,        // 高盈利阈值 40%
+            retracement_min_count: 0,           // 拐点次数阈值
+            retracement_inflection_window: 5,   // 拐点检测窗口大小
+            retracement_min_hold_ms: 60000,     // 回撤止损最小持有时间 60秒
+            retracement_min_profit: 0.05,       // 回撤止损最小盈利阈值 5%
+            sell_pressure_enabled: false,
+            sell_pressure_lookback: 10,
+            sell_pressure_sum_threshold: -20.0,
+            sell_pressure_all_sell: false,
+            max_hold_time_seconds: 3000,
             quiet_period_enabled: false,
             quiet_period_seconds: 20,
             quiet_period_min_amount: 0.8,
             spike_sell_enabled: true,
-            spike_lookback_ms: 1000,
+            spike_lookback_ms: 400,
             spike_threshold_pct: 8.0,
             rebound_sell_enabled: true,
             rebound_min_loss_pct: 7.0,
@@ -116,7 +116,7 @@ impl SellConditionsConfig {
             active_spike_sell_enabled: true,
             active_spike_window_seconds: 2,
             active_spike_min_trade_count: 20,
-            active_spike_lookback_count: 15,
+            active_spike_lookback_count: 35,
             active_spike_min_rise_pct: 15.0,
             // 低活跃涨幅卖出
             inactive_spike_sell_enabled: true,
@@ -389,7 +389,7 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                         // 获取最近的价格历史
                         let price_history: Vec<f64> = feed.price_history
                             .iter()
-                            .take(20)
+                            .take(80) // 最多取最近80笔交易的价格历史
                             .cloned()
                             .collect();
                         
@@ -503,6 +503,200 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                                 hold_time_seconds, cfg.quiet_period_seconds, cfg.quiet_period_min_amount
                             );
                             need_sell = true;
+                        }
+                    }
+                }
+
+                // =============================================================
+                // 条件7: 短期暴涨卖出
+                // Python: if spike_sell_enabled and current_profit_rate > 0:
+                //     从当前交易向前找到 spike_lookback_ms 之前的那笔交易价格
+                //     spike_pct = (current_price - ref_price) / ref_price * 100
+                //     如果 spike_pct >= spike_threshold_pct: 卖出
+                // =============================================================
+                if !need_sell && cfg.spike_sell_enabled && current_profit_rate > 0.0 {
+                    let spike_start_time = current_miltime.saturating_sub(cfg.spike_lookback_ms as u128);
+                    let mut ref_price: Option<f64> = None;
+
+                    // 从最近的交易向前遍历，找到第一个时间 <= spike_start_time 的交易
+                    // Python: for j in range(i - 1, buy_index - 1, -1):
+                    //             if prev_time <= spike_start_time: ref_price = price; break
+                    let prepare_trades = &feed.prepareTrade;
+                    for pt in prepare_trades.iter() {
+                        // 跳过当前交易之后的数据
+                        if pt.swap_time >= current_miltime {
+                            continue;
+                        }
+                        // 只看买入之后的交易
+                        if pt.swap_time < buy_time {
+                            break;
+                        }
+                        // 找到第一笔时间 <= spike_start_time 的交易
+                        if pt.swap_time <= spike_start_time {
+                            ref_price = Some(pt.price as f64);
+                            break;
+                        }
+                    }
+
+                    if let Some(rp) = ref_price {
+                        if rp > 0.0 {
+                            // Python: spike_pct = (current_price - ref_price) / ref_price * 100
+                            let spike_pct = (current_price as f64 - rp) / rp * 100.0;
+                            if spike_pct >= cfg.spike_threshold_pct {
+                                sell_reason += &format!(
+                                    "短期暴涨卖出(近{}ms涨幅{:.2}%>={:.1}%)|",
+                                    cfg.spike_lookback_ms, spike_pct, cfg.spike_threshold_pct
+                                );
+                                need_sell = true;
+                            }
+                        }
+                    }
+                }
+
+                // =============================================================
+                // 条件8: 反弹卖出
+                // Python: if rebound_sell_enabled and has_experienced_loss:
+                //     if current_profit_rate >= rebound_min_profit_pct / 100:
+                //         if current_tradeamount >= rebound_min_buy_amount: 卖出
+                // has_experienced_loss = 曾经亏损超过 rebound_min_loss_pct
+                // =============================================================
+                if !need_sell && cfg.rebound_sell_enabled && has_experienced_loss {
+                    let rebound_min_profit = cfg.rebound_min_profit_pct / 100.0;
+                    if current_profit_rate >= rebound_min_profit {
+                        // Python: current_tradeamount >= rebound_min_buy_amount
+                        // 在Python中 tradeamount 买入为正，这里只检查买单
+                        if !is_sell_trade && current_trade_amount >= cfg.rebound_min_buy_amount {
+                            sell_reason += &format!(
+                                "反弹卖出(最低亏损{:.2}%>={:.0}%,反弹至盈利{:.2}%>={:.0}%,买单{:.2}>={:.1}SOL)|",
+                                indicator.min_profit_rate.abs() * 100.0,
+                                cfg.rebound_min_loss_pct,
+                                current_profit_rate * 100.0,
+                                cfg.rebound_min_profit_pct,
+                                current_trade_amount,
+                                cfg.rebound_min_buy_amount
+                            );
+                            need_sell = true;
+                        }
+                    }
+                }
+
+                // =============================================================
+                // 条件9: 活跃期高涨幅卖出
+                // Python: if active_spike_sell_enabled and current_profit_rate > 0:
+                //     统计近 active_spike_window_seconds 秒内交易笔数
+                //     如果 >= active_spike_min_trade_count:
+                //         取近 active_spike_lookback_count 单(买入后)的最低价
+                //         rise_pct = (current_price - min_price) / min_price * 100
+                //         如果 rise_pct >= active_spike_min_rise_pct: 卖出
+                // =============================================================
+                if !need_sell && cfg.active_spike_sell_enabled && current_profit_rate > 0.0 {
+                    let window_start = current_miltime.saturating_sub((cfg.active_spike_window_seconds as u128) * 1000);
+                    let mut recent_count: usize = 0;
+
+                    let prepare_trades = &feed.prepareTrade;
+                    // 统计时间窗口内交易笔数
+                    for pt in prepare_trades.iter() {
+                        if pt.swap_time >= current_miltime { continue; }
+                        if pt.swap_time < buy_time { break; }
+                        if pt.swap_time < window_start { break; }
+                        recent_count += 1;
+                    }
+
+                    if recent_count >= cfg.active_spike_min_trade_count {
+                        // 取近 lookback_count 单(买入后的)最低价
+                        // Python: 使用 trade_data[j]['price']，Rust 使用 pt.price
+                        let mut low_prices: Vec<f64> = Vec::new();
+                        let mut cnt = 0usize;
+                        for pt in prepare_trades.iter() {
+                            if pt.swap_time >= current_miltime { continue; }
+                            if pt.swap_time < buy_time { break; }
+                            let p = pt.price as f64;
+                            if p > 0.0 {
+                                low_prices.push(p);
+                            }
+                            cnt += 1;
+                            if cnt >= cfg.active_spike_lookback_count { break; }
+                        }
+
+                        if !low_prices.is_empty() {
+                            let min_recent_price = low_prices.iter().cloned().fold(f64::INFINITY, f64::min);
+                            if min_recent_price > 0.0 {
+                                // Python: (current_price - min_recent_price) / min_recent_price * 100
+                                let rise_pct = (current_price as f64 - min_recent_price) / min_recent_price * 100.0;
+                                if rise_pct >= cfg.active_spike_min_rise_pct {
+                                    sell_reason += &format!(
+                                        "活跃期高涨幅卖出(近{}秒{}笔>={},距近{}单最低涨{:.2}%>={:.0}%)|",
+                                        cfg.active_spike_window_seconds,
+                                        recent_count,
+                                        cfg.active_spike_min_trade_count,
+                                        cfg.active_spike_lookback_count,
+                                        rise_pct,
+                                        cfg.active_spike_min_rise_pct
+                                    );
+                                    need_sell = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // =============================================================
+                // 条件10: 低活跃涨幅卖出
+                // Python: if inactive_spike_sell_enabled and current_profit_rate > 0:
+                //     统计近 inactive_spike_window_seconds 秒内交易笔数
+                //     如果 < inactive_spike_max_trade_count (低活跃):
+                //         取近 inactive_spike_lookback_count 单(买入后)的最低价
+                //         rise_pct = (current_price - min_price) / min_price * 100
+                //         如果 rise_pct >= inactive_spike_min_rise_pct: 卖出
+                // =============================================================
+                if !need_sell && cfg.inactive_spike_sell_enabled && current_profit_rate > 0.0 {
+                    let inactive_window_start = current_miltime.saturating_sub((cfg.inactive_spike_window_seconds as u128) * 1000);
+                    let mut inactive_count: usize = 0;
+
+                    let prepare_trades = &feed.prepareTrade;
+                    // 统计时间窗口内交易笔数
+                    for pt in prepare_trades.iter() {
+                        if pt.swap_time >= current_miltime { continue; }
+                        if pt.swap_time < buy_time { break; }
+                        if pt.swap_time < inactive_window_start { break; }
+                        inactive_count += 1;
+                    }
+
+                    // 低活跃：交易笔数 < 阈值
+                    if inactive_count < cfg.inactive_spike_max_trade_count {
+                        // 取近 lookback_count 单最低价
+                        // Python: 使用 trade_data[j]['price']，Rust 使用 pt.price
+                        let mut inactive_low_prices: Vec<f64> = Vec::new();
+                        let mut cnt = 0usize;
+                        for pt in prepare_trades.iter() {
+                            if pt.swap_time >= current_miltime { continue; }
+                            if pt.swap_time < buy_time { break; }
+                            let p = pt.price as f64;
+                            if p > 0.0 {
+                                inactive_low_prices.push(p);
+                            }
+                            cnt += 1;
+                            if cnt >= cfg.inactive_spike_lookback_count { break; }
+                        }
+
+                        if !inactive_low_prices.is_empty() {
+                            let min_inactive_price = inactive_low_prices.iter().cloned().fold(f64::INFINITY, f64::min);
+                            if min_inactive_price > 0.0 {
+                                // Python: (current_price - min_price) / min_price * 100
+                                let inactive_rise_pct = (current_price as f64 - min_inactive_price) / min_inactive_price * 100.0;
+                                if inactive_rise_pct >= cfg.inactive_spike_min_rise_pct {
+                                    sell_reason += &format!(
+                                        "低活跃涨幅卖出(近{}秒仅{}笔<{},距近{}单最低涨{:.2}%>={:.0}%)|",
+                                        cfg.inactive_spike_window_seconds,
+                                        inactive_count,
+                                        cfg.inactive_spike_max_trade_count,
+                                        cfg.inactive_spike_lookback_count,
+                                        inactive_rise_pct,
+                                        cfg.inactive_spike_min_rise_pct
+                                    );
+                                    need_sell = true;
+                                }
+                            }
                         }
                     }
                 }
