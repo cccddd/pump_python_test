@@ -147,7 +147,7 @@ impl Default for BuyConditionsConfig {
             nowsol_range: (100.0, 250.0),
             
             // 条件3: 当前交易单金额范围
-            trade_amount_range: (4.0, 15.0),
+            trade_amount_range: (5.0, 11.0),
             
             // 条件4: 时间差检查
             time_diff_check_mode: CheckMode::Debug,
@@ -156,7 +156,7 @@ impl Default for BuyConditionsConfig {
             // 条件5: 过滤后的前N笔交易总和范围
             filtered_trades_min_amount: 0.05,
             filtered_trades_count: 20,
-            filtered_trades_sum_range: (-3.0, 15.0),
+            filtered_trades_sum_range: (-3.0, 10.0),
             
             // 条件6: 当前交易类型
             trade_type: TradeTypeFilter::Sell,
@@ -189,8 +189,8 @@ impl Default for BuyConditionsConfig {
             
             // 条件10: 买单数量检查
             buy_count_check_mode: CheckMode::Online,
-            buy_count_lookback_count: 15,
-            buy_count_min: 6,
+            buy_count_lookback_count: 30,
+            buy_count_min: 15,
             
             // 条件11: 卖单数量检查
             sell_count_check_mode: CheckMode::Debug,
@@ -201,7 +201,7 @@ impl Default for BuyConditionsConfig {
             large_trade_ratio_check_mode: CheckMode::Online,
             large_trade_ratio_lookback: 20,
             large_trade_threshold: 1.0,
-            large_trade_ratio_range: (0.0, 0.1),
+            large_trade_ratio_range: (0.0, 0.2),
             
             // 条件13: 小单占比检查
             small_trade_ratio_check_mode: CheckMode::Debug,
@@ -216,7 +216,7 @@ impl Default for BuyConditionsConfig {
             
             // 条件15: 连续大额卖单检查
             consecutive_sell_check_mode: CheckMode::Debug,
-            consecutive_sell_threshold: 0.0,
+            consecutive_sell_threshold: 0.1,
             consecutive_sell_max: 2,
             
             // 条件16: 近N秒内交易单数量
@@ -227,7 +227,7 @@ impl Default for BuyConditionsConfig {
             // 条件17: 近N单平均交易间隔时间
             avg_trade_interval_check_mode: CheckMode::Online,
             avg_trade_interval_lookback_count: 30,
-            avg_trade_interval_range: (0, 2000),
+            avg_trade_interval_range: (0, 5000),
         }
     }
 }
@@ -631,12 +631,12 @@ impl PipelineHandler for QtfyNewAmmBuyStrategyDemo {
                 {
                     // ...existing code...
                     let post_sol_amount_ok =
-                        *data.post_sol_amount() >= 100.0 && *data.post_sol_amount() <= 300.0;
+                        *data.post_sol_amount() >= 100.0 && *data.post_sol_amount() <= 250.0;
 
-                    let time_is_ok = *data.trade_miltime() > watcher.start_time + 3 * 60 * 1000;
+                    let time_is_ok = *data.trade_miltime() > watcher.start_time + 0 * 60 * 1000;
 
-                    let cue_trade_is_ok = *data.trade_sol_amount() > 4.5
-                        && *data.trade_sol_amount() < 10.0
+                    let cue_trade_is_ok = *data.trade_sol_amount() > 5.0
+                        && *data.trade_sol_amount() < 11.0
                         && data.trade_type() == "sell";
 
                     let recent_trades: Vec<_> = lianghua_watch
@@ -809,7 +809,7 @@ impl PipelineHandler for QtfyNewAmmBuyStrategyDemo {
                         // ...existing code for GROUP_CACHE check...
                         let record = GROUP_CACHE.get(&watcher.group_full_name.clone());
                         if let Some(rd) = record {
-                            let fail_cnt = rd.group_max_rate_record.iter().take(4).filter(|&&rate| rate < -15.0).count();
+                            let fail_cnt = rd.group_max_rate_record.iter().take(3).filter(|&&rate| rate < -20.0).count();
                             let succ_cnt = rd.group_max_rate_record.iter().take(7).filter(|&&rate| rate > 5.0).count();
                             let succ_cnt2 = rd.group_max_rate_record.iter().take(15).filter(|&&rate| rate > 5.0).count();
                             if fail_cnt >= 1 {

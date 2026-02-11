@@ -11,12 +11,15 @@ STRATEGY_CONFIG = pump.STRATEGY_CONFIG
 # =============================================================================
 BUY_CONDITIONS_CONFIG = {
     # 条件1: 距离创币时间（分钟）
-    'TIME_FROM_CREATION_MINUTES': 0,  # 距离创币时间 >= 5 分钟
+    'TIME_FROM_CREATION_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
+    'TIME_FROM_CREATION_MINUTES': 0,  # 距离创币时间 >= 2 分钟 (online模式使用)
+    'TIME_FROM_CREATION_RANGE': (2, 4),  # 距离创币时间范围（分钟）(online模式使用)
+    'TIME_FROM_CREATION_BUCKETS': [0, 1, 2, 3, 5, 10, 15, 20, 30, 60],  # 创币时间分桶边界（分钟）
     # 条件2: 当前市值范围（nowsol字段）
-    'NOWSOL_RANGE': (100, 250),  # nowsol 在 [100, 250] 范围内
+    'NOWSOL_RANGE': (5, 35),  # nowsol 在 [5, 35] 范围内
 
     # 条件3: 当前交易单金额范围
-    'TRADE_AMOUNT_RANGE': (5.0, 11.0),  # 交易金额绝对值在 [5.0, 11.0] 范围内
+    'TRADE_AMOUNT_RANGE': (0.7, 2.0),  # 交易金额绝对值在 [0.3, 2.0] 范围内
 
     # 条件4: 当前交易单距离上一个交易单的时间差（毫秒）
     # 'off' - 禁用此条件
@@ -27,15 +30,15 @@ BUY_CONDITIONS_CONFIG = {
     'TIME_DIFF_BUCKETS': [0, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000],  # 时间差分桶边界（毫秒）
 
     # 条件5: 过滤后的前N笔交易总和范围
-    'FILTERED_TRADES_MIN_AMOUNT': 0.05,  # 过滤掉交易金额绝对值小于此值的交易
-    'FILTERED_TRADES_COUNT': 20,  # 取前N笔有效交易
-    'FILTERED_TRADES_SUM_RANGE': (-3.0, 10.0),  # 交易金额总和范围
+    'FILTERED_TRADES_MIN_AMOUNT': 0.1,  # 过滤掉交易金额绝对值小于此值的交易
+    'FILTERED_TRADES_COUNT': 10,  # 取前N笔有效交易
+    'FILTERED_TRADES_SUM_RANGE': (-5.0, -3.0),  # 交易金额总和范围
     
     # 条件6: 当前交易类型
     # 'buy' - 只匹配买入交易 (tradeamount > 0)
     # 'sell' - 只匹配卖出交易 (tradeamount < 0)
     # 'both' - 匹配买入和卖出交易
-    'TRADE_TYPE': 'sell',  # 可选值: 'buy', 'sell', 'both'
+    'TRADE_TYPE': 'buy',  # 可选值: 'buy', 'sell', 'both'
     
     # 条件7: 当前交易金额是否为近T单中最大
     # 'off' - 禁用此条件
@@ -86,7 +89,7 @@ BUY_CONDITIONS_CONFIG = {
     # 'off' - 禁用此条件
     # 'online' - 启用此条件，进行实际过滤
     # 'debug' - 调试模式，只收集统计数据，不过滤
-    'BUY_COUNT_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
+    'BUY_COUNT_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
     'BUY_COUNT_LOOKBACK_COUNT': 30,  # 向前查看的交易数量
     'BUY_COUNT_MIN': 15,  # 最少买单数量 - online模式使用
     'BUY_COUNT_BUCKETS': [0, 2, 4, 6, 8, 10, 12, 15, 30],  # 买单数量分桶边界
@@ -104,7 +107,7 @@ BUY_CONDITIONS_CONFIG = {
     # 'off' - 禁用此条件
     # 'online' - 启用此条件，进行实际过滤
     # 'debug' - 调试模式，只收集统计数据，不过滤
-    'LARGE_TRADE_RATIO_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
+    'LARGE_TRADE_RATIO_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
     'LARGE_TRADE_RATIO_LOOKBACK': 20,  # 向前查看的交易数量
     'LARGE_TRADE_THRESHOLD': 1.0,  # 大单阈值(SOL)，交易金额绝对值 >= 此值视为大单
     'LARGE_TRADE_RATIO_RANGE': (0.0, 0.2),  # 大单占比范围 - online模式使用
@@ -145,36 +148,36 @@ BUY_CONDITIONS_CONFIG = {
     'RECENT_TRADE_COUNT_BUCKETS': [0, 3, 5, 10, 15, 20, 30, 50, 100],
     
     # 条件17: 近N单平均交易间隔时间
-    'AVG_TRADE_INTERVAL_CHECK_MODE': 'online',
+    'AVG_TRADE_INTERVAL_CHECK_MODE': 'debug',
     'AVG_TRADE_INTERVAL_LOOKBACK_COUNT': 30,
     'AVG_TRADE_INTERVAL_RANGE': (0, 5000),
     'AVG_TRADE_INTERVAL_BUCKETS': [0, 200, 500, 1000, 2000, 3000, 5000, 10000, 30000],
     
     # Debug统计配置
-    'DEBUG_EXCLUDE_HIGH_PROFIT_THRESHOLD': 1.0,  # 计算平均盈利率时排除盈利率 >= 此值(100%)的交易
+    'DEBUG_EXCLUDE_HIGH_PROFIT_THRESHOLD': 2.0,  # 计算平均盈利率时排除盈利率 >= 此值(100%)的交易
 }
 
 
 SELL_CONDITIONS_CONFIG = {
     # 市值止盈
-    'MAX_NOWSOL_SELL': 300.0,  # 当市值 >= 300 SOL 时直接卖出
+    'MAX_NOWSOL_SELL': 70.0,  # 当市值 >= 70 SOL 时直接卖出
 
     # 盈利率止盈
     'PROFIT_RATE_SELL_ENABLED': True,  # 是否启用盈利率止盈
-    'PROFIT_RATE_SELL_THRESHOLD': 0.5,  # 盈利率 >= 50% 时直接卖出
+    'PROFIT_RATE_SELL_THRESHOLD': 1.5,  # 盈利率 >= 150% 时直接卖出
 
     # 亏损止损
-    'LOSS_PERCENTAGE': 0.3,  # 亏损达到 30% 时触发止损检查
+    'LOSS_PERCENTAGE': 0.05,  # 亏损达到 5% 时触发止损检查
     'LOOKBACK_TRADES_FOR_MIN_PRICE': 20,  # 买入前N笔交易用于计算最小价格
     
     # 回撤止损
-    'RETRACEMENT_LOW_PROFIT': 0.05,  # 最大盈利 < 50% 时，回撤 5% 卖出
+    'RETRACEMENT_LOW_PROFIT': 0.03,  # 最大盈利 < 50% 时，回撤 3% 卖出
     'RETRACEMENT_HIGH_PROFIT': 0.1,  # 最大盈利 >= 50% 时，回撤 10% 卖出
     'HIGH_PROFIT_THRESHOLD': 0.4,  # 高盈利阈值 40%
     'RETRACEMENT_MIN_COUNT': 0,  # 回撤区间内价格拐点向下次数 >= 此值才触发卖出
     'RETRACEMENT_INFLECTION_WINDOW': 5,  # 拐点检测窗口大小（取最近X个单子，中间位置是最大值则为拐点）
-    'RETRACEMENT_MIN_HOLD_MS': 60000,  # 回撤止损最小持有时间（毫秒），持有时间 >= 此值才触发回撤止损
-    'RETRACEMENT_MIN_PROFIT': 0.05,  # 回撤止损最小盈利阈值，当前盈利 >= 此值才触发回撤止损
+    'RETRACEMENT_MIN_HOLD_MS': 0,  # 回撤止损最小持有时间（毫秒），持有时间 >= 此值才触发回撤止损
+    'RETRACEMENT_MIN_PROFIT': -0.15,  # 回撤止损最小盈利阈值，当前盈利 >= 此值才触发回撤止损
 
     # 近N单卖压检测
     'SELL_PRESSURE_ENABLED': False,  # 是否启用卖压检测
@@ -608,6 +611,13 @@ class DebugStatsCollector:
     
     def reset(self):
         """重置统计数据"""
+        # 条件1: 距离创币时间统计
+        self.time_from_creation_stats = {
+            'total': 0,
+            'time_from_creation_values': [],
+            'profitable_time_from_creation_values': [],
+        }
+        
         # 条件4: 时间差检查统计
         self.time_diff_stats = {
             'total': 0,
@@ -722,6 +732,11 @@ class DebugStatsCollector:
         else:
             self.max_amount_stats['not_max'] += 1
     
+    def record_time_from_creation_check(self, minutes: float):
+        """记录距离创币时间检查结果"""
+        self.time_from_creation_stats['total'] += 1
+        self.time_from_creation_stats['time_from_creation_values'].append(minutes)
+    
     def record_time_diff_check(self, time_diff: int):
         """记录时间差检查结果"""
         self.time_diff_stats['total'] += 1
@@ -782,10 +797,11 @@ class DebugStatsCollector:
         self.avg_trade_interval_stats['total'] += 1
         self.avg_trade_interval_stats['avg_trade_interval_values'].append(interval)
     
-    def record_trade_result(self, is_profitable: bool, time_diff: Optional[int], is_max: Optional[bool], price_volatility: Optional[float], time_volatility: Optional[float], amount_volatility: Optional[float], price_ratio: Optional[float] = None, buy_count: Optional[int] = None, sell_count: Optional[int] = None, large_trade_ratio: Optional[float] = None, small_trade_ratio: Optional[float] = None, consecutive_buy: Optional[int] = None, consecutive_sell: Optional[int] = None, profit_rate: Optional[float] = None, recent_trade_count: Optional[int] = None, avg_trade_interval: Optional[float] = None):
+    def record_trade_result(self, is_profitable: bool, time_diff: Optional[int], is_max: Optional[bool], price_volatility: Optional[float], time_volatility: Optional[float], amount_volatility: Optional[float], price_ratio: Optional[float] = None, buy_count: Optional[int] = None, sell_count: Optional[int] = None, large_trade_ratio: Optional[float] = None, small_trade_ratio: Optional[float] = None, consecutive_buy: Optional[int] = None, consecutive_sell: Optional[int] = None, profit_rate: Optional[float] = None, recent_trade_count: Optional[int] = None, avg_trade_interval: Optional[float] = None, time_from_creation_minutes: Optional[float] = None):
         """记录交易结果"""
         self.trade_records.append({
             'is_profitable': is_profitable,
+            'time_from_creation_minutes': time_from_creation_minutes,
             'time_diff': time_diff,
             'is_max': is_max,
             'price_volatility': price_volatility,
@@ -804,6 +820,10 @@ class DebugStatsCollector:
         })
         
         if is_profitable:
+            # 距离创币时间统计
+            if time_from_creation_minutes is not None:
+                self.time_from_creation_stats['profitable_time_from_creation_values'].append(time_from_creation_minutes)
+            
             # 时间差统计
             if time_diff is not None:
                 self.time_diff_stats['profitable_time_diff_values'].append(time_diff)
@@ -941,6 +961,30 @@ class DebugStatsCollector:
         
         print(f"\n  Debug收集的交易数: {total_debug_trades}, 盈利: {overall_profitable}, 胜率: {overall_win_rate:.2f}%")
         print(f"  平均盈利率: {overall_avg_profit_rate:.2f}% (排除{excluded_count}笔盈利>={exclude_threshold*100:.0f}%的交易)")
+        
+        # 条件1: 距离创币时间统计
+        if self.time_from_creation_stats['total'] > 0:
+            total = self.time_from_creation_stats['total']
+            profitable_count = len(self.time_from_creation_stats['profitable_time_from_creation_values'])
+            cond_profit_rates = [r.get('profit_rate', 0) for r in self.trade_records if r.get('time_from_creation_minutes') is not None and r.get('profit_rate') is not None and r.get('profit_rate') < exclude_threshold]
+            cond_avg_profit_rate = sum(cond_profit_rates) / len(cond_profit_rates) * 100 if cond_profit_rates else 0
+            
+            print("\n【条件1: 距离创币时间检查】")
+            print(f"  总交易数: {total}, 盈利: {profitable_count}, 盈利率: {profitable_count/total*100:.2f}%, 平均盈利率: {cond_avg_profit_rate:.2f}%")
+            
+            if self.time_from_creation_stats['time_from_creation_values']:
+                print(f"\n  距离创币时间(分钟)分布:")
+                creation_buckets = BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_BUCKETS']
+                creation_dist = self.get_bucket_distribution(self.time_from_creation_stats['time_from_creation_values'], creation_buckets)
+                
+                profitable_creation_dist = self.get_bucket_distribution(self.time_from_creation_stats['profitable_time_from_creation_values'], creation_buckets) if self.time_from_creation_stats['profitable_time_from_creation_values'] else {}
+                avg_profit_rates = self.get_avg_profit_rate_by_bucket(self.time_from_creation_stats['time_from_creation_values'], creation_buckets, self.trade_records, 'time_from_creation_minutes')
+                
+                for bucket_name, stats in creation_dist.items():
+                    profitable_in_bucket = profitable_creation_dist.get(bucket_name, {'count': 0})['count']
+                    bucket_profit_rate = profitable_in_bucket / stats['count'] * 100 if stats['count'] > 0 else 0
+                    avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
+                    print(f"    {bucket_name}min: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
         
         # 条件4: 时间差检查统计
         if self.time_diff_stats['total'] > 0:
@@ -1318,11 +1362,28 @@ def variant_find_buy_signal(trade_data: List[Dict], start_index: int, creation_t
     except (TypeError, ValueError):
         return None
     
-    # 条件1: 检查距离创币时间是否大于指定分钟数
+    # 条件1: 检查距离创币时间
     time_diff_seconds = (tradetime - creation_time) / 1000  # 转换为秒
     time_diff_minutes = time_diff_seconds / 60  # 转换为分钟
-    if time_diff_minutes < BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_MINUTES']:
-        return None
+    
+    time_from_creation_mode = BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_CHECK_MODE', 'online')
+    if time_from_creation_mode == 'online':
+        # online模式：同时检查最小分钟数和范围
+        if time_diff_minutes < BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_MINUTES']:
+            return None
+        creation_range = BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_RANGE')
+        if creation_range:
+            cr_min, cr_max = creation_range
+            if not (cr_min <= time_diff_minutes <= cr_max):
+                return None
+    elif time_from_creation_mode == 'off':
+        # off模式：不检查，但仍需最小值过滤
+        if time_diff_minutes < BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_MINUTES']:
+            return None
+    # debug模式：只检查最小值，不按范围过滤，统计数据在 wrapped_backtest_mint 中收集
+    elif time_from_creation_mode == 'debug':
+        if time_diff_minutes < BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_MINUTES']:
+            return None
     
     # 条件2: 检查当前市值是否在指定范围内
     nowsol_min, nowsol_max = BUY_CONDITIONS_CONFIG['NOWSOL_RANGE']
@@ -1574,7 +1635,8 @@ def variant_find_buy_signal(trade_data: List[Dict], start_index: int, creation_t
                 return None
     
     # 保存debug信息供后续记录交易结果使用
-    has_debug = (max_amount_mode == 'debug' or 
+    has_debug = (time_from_creation_mode == 'debug' or
+                 max_amount_mode == 'debug' or 
                  price_volatility_mode == 'debug' or time_volatility_mode == 'debug' or amount_volatility_mode == 'debug' or 
                  price_ratio_mode == 'debug' or buy_count_mode == 'debug' or sell_count_mode == 'debug' or
                  large_ratio_mode == 'debug' or small_ratio_mode == 'debug' or
@@ -1582,6 +1644,7 @@ def variant_find_buy_signal(trade_data: List[Dict], start_index: int, creation_t
     if has_debug:
         # 将当前信号的debug信息存储到全局变量
         debug_stats.current_signal_info = {
+            'time_from_creation_minutes': time_diff_minutes,
             'is_max_amount': is_max_amount,
             'price_volatility': price_volatility,
             'time_volatility': time_volatility,
@@ -1951,7 +2014,8 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
     trades = original_backtest_mint(mint_name, mint_data)
     
     # 如果是debug模式，记录每笔交易的结果
-    has_debug_mode = (BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' or 
+    has_debug_mode = (BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_CHECK_MODE', 'off') == 'debug' or
+                      BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' or 
                       BUY_CONDITIONS_CONFIG['MAX_AMOUNT_CHECK_MODE'] == 'debug' or 
                       BUY_CONDITIONS_CONFIG['PRICE_VOLATILITY_CHECK_MODE'] == 'debug' or
                       BUY_CONDITIONS_CONFIG['TIME_VOLATILITY_CHECK_MODE'] == 'debug' or
@@ -1968,6 +2032,32 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
     
     if has_debug_mode:
         trade_data = mint_data.get('trade_data', [])
+        # 尝试多种字段名获取创币时间
+        creation_time = None
+        for key in ('creation_time', 'createtime', 'create_time'):
+            val = mint_data.get(key, None)
+            if val is not None:
+                try:
+                    val = int(val)
+                    if val > 0:
+                        creation_time = val
+                        break
+                except (TypeError, ValueError):
+                    continue
+        if creation_time is None or creation_time == 0:
+            # 尝试从第一条交易记录获取时间作为近似创币时间
+            if trade_data:
+                try:
+                    creation_time = int(trade_data[0].get('tradetime', 0))
+                except (TypeError, ValueError):
+                    creation_time = 0
+            else:
+                creation_time = 0
+        else:
+            try:
+                creation_time = int(creation_time)
+            except (TypeError, ValueError):
+                creation_time = 0
         
         for trade in trades:
             is_profitable = trade.get('is_profitable', False)
@@ -1988,6 +2078,7 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
                 continue
             
             # 初始化所有debug变量
+            time_from_creation_minutes = None
             time_diff = None
             is_max_amount = None
             price_volatility = None
@@ -2002,6 +2093,15 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
             consecutive_sell = None
             recent_trade_count = None
             avg_trade_interval = None
+            
+            # 重新计算距离创币时间
+            if BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_CHECK_MODE', 'off') in ('debug', 'online'):
+                try:
+                    cur_time = int(trade_data[buy_trigger_index].get('tradetime', 0))
+                    if cur_time > 0 and creation_time > 0 and cur_time >= creation_time:
+                        time_from_creation_minutes = (cur_time - creation_time) / 1000.0 / 60.0
+                except (TypeError, ValueError, IndexError):
+                    pass
             
             # 重新计算时间差
             if BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] in ('debug', 'online') and buy_trigger_index > 0:
@@ -2077,6 +2177,8 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
                 avg_trade_interval = get_avg_trade_interval(trade_data, buy_trigger_index, interval_lookback)
             
             # 统一记录各条件的debug统计（仅debug模式才记录分桶统计）
+            if BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_CHECK_MODE', 'off') == 'debug' and time_from_creation_minutes is not None:
+                debug_stats.record_time_from_creation_check(time_from_creation_minutes)
             if BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' and time_diff is not None:
                 debug_stats.record_time_diff_check(time_diff)
             if BUY_CONDITIONS_CONFIG['MAX_AMOUNT_CHECK_MODE'] == 'debug' and is_max_amount is not None:
@@ -2110,7 +2212,7 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
                 debug_stats.record_avg_trade_interval_check(avg_trade_interval)
             
             # 统一记录交易结果（所有debug值一次性写入）
-            debug_stats.record_trade_result(is_profitable, time_diff, is_max_amount, price_volatility, time_volatility, amount_volatility, price_ratio, buy_count, sell_count, large_trade_ratio, small_trade_ratio, consecutive_buy, consecutive_sell, profit_rate, recent_trade_count, avg_trade_interval)
+            debug_stats.record_trade_result(is_profitable, time_diff, is_max_amount, price_volatility, time_volatility, amount_volatility, price_ratio, buy_count, sell_count, large_trade_ratio, small_trade_ratio, consecutive_buy, consecutive_sell, profit_rate, recent_trade_count, avg_trade_interval, time_from_creation_minutes)
     
     return trades
 
@@ -2122,7 +2224,11 @@ print('=' * 60)
 print('基本条件组合回测')
 print('=' * 60)
 print(f"买入条件配置:")
-print(f"  1. 距离创币时间 >= {BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_MINUTES']} 分钟")
+mode_desc = {'off': '禁用', 'online': '启用', 'debug': '调试'}
+time_from_creation_mode_desc = mode_desc.get(BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_CHECK_MODE', 'off'), BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_CHECK_MODE', 'off'))
+print(f"  1. 距离创币时间检查: {time_from_creation_mode_desc}, 最小 >= {BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_MINUTES']} 分钟")
+if BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_CHECK_MODE', 'off') == 'online':
+    print(f"     范围: {BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_RANGE')} 分钟")
 print(f"  2. 市值范围(nowsol): {BUY_CONDITIONS_CONFIG['NOWSOL_RANGE']}")
 print(f"  3. 交易金额范围: {BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_RANGE']}")
 mode_desc = {'off': '禁用', 'online': '启用', 'debug': '调试'}
@@ -2195,13 +2301,14 @@ if SELL_CONDITIONS_CONFIG.get('INACTIVE_SPIKE_SELL_ENABLED', False):
 print('=' * 60)
 
 
-log_file = '/Users/xcold/Desktop/pumpamm_mint_info.log'
+log_file = '/Users/xcold/Desktop/js_log_mint_0209.log'
 
 
 pump.run_backtest(log_file)
 
 # 如果有debug模式的统计数据，打印摘要
-has_debug_mode = (BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' or 
+has_debug_mode = (BUY_CONDITIONS_CONFIG.get('TIME_FROM_CREATION_CHECK_MODE', 'off') == 'debug' or
+                  BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' or 
                   BUY_CONDITIONS_CONFIG['MAX_AMOUNT_CHECK_MODE'] == 'debug' or 
                   BUY_CONDITIONS_CONFIG['PRICE_VOLATILITY_CHECK_MODE'] == 'debug' or
                   BUY_CONDITIONS_CONFIG['TIME_VOLATILITY_CHECK_MODE'] == 'debug' or

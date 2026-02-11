@@ -41,6 +41,18 @@ pub struct SellConditionsConfig {
     pub rebound_min_loss_pct: f64,      // 反弹卖出最低亏损阈值百分比
     pub rebound_min_profit_pct: f64,    // 反弹卖出盈利阈值百分比
     pub rebound_min_buy_amount: f32,    // 反弹卖出触发的最小买单金额(SOL)
+    // 活跃期高涨幅卖出
+    pub active_spike_sell_enabled: bool,    // 是否启用
+    pub active_spike_window_seconds: u64,   // 时间窗口（秒）
+    pub active_spike_min_trade_count: usize,// 时间窗口内最少交易单数
+    pub active_spike_lookback_count: usize, // 计算最低价的近N单
+    pub active_spike_min_rise_pct: f64,     // 距最低价的最小涨幅百分比
+    // 低活跃涨幅卖出
+    pub inactive_spike_sell_enabled: bool,    // 是否启用
+    pub inactive_spike_window_seconds: u64,   // 时间窗口（秒）
+    pub inactive_spike_max_trade_count: usize,// 时间窗口内最多交易单数（低于此值视为低活跃）
+    pub inactive_spike_lookback_count: usize, // 计算最低价的近N单
+    pub inactive_spike_min_rise_pct: f64,     // 距最低价的最小涨幅百分比
 }
 
 #[derive(Debug, Deserialize)]
@@ -90,16 +102,28 @@ impl SellConditionsConfig {
             sell_pressure_sum_threshold: -20.0, // 近10单总和 < -20 SOL 时卖出
             sell_pressure_all_sell: false,    // 近10单全是卖单时卖出
             max_hold_time_seconds: 6000,
-            quiet_period_enabled: true,
+            quiet_period_enabled: false,
             quiet_period_seconds: 20,
             quiet_period_min_amount: 0.8,
             spike_sell_enabled: true,
             spike_lookback_ms: 1000,
-            spike_threshold_pct: 10.0,
-            rebound_sell_enabled: false,      // 禁用反弹卖出
+            spike_threshold_pct: 8.0,
+            rebound_sell_enabled: true,
             rebound_min_loss_pct: 7.0,
             rebound_min_profit_pct: 5.0,
-            rebound_min_buy_amount: 2.5,
+            rebound_min_buy_amount: 3.5,
+            // 活跃期高涨幅卖出
+            active_spike_sell_enabled: true,
+            active_spike_window_seconds: 2,
+            active_spike_min_trade_count: 20,
+            active_spike_lookback_count: 15,
+            active_spike_min_rise_pct: 15.0,
+            // 低活跃涨幅卖出
+            inactive_spike_sell_enabled: true,
+            inactive_spike_window_seconds: 3,
+            inactive_spike_max_trade_count: 5,
+            inactive_spike_lookback_count: 20,
+            inactive_spike_min_rise_pct: 8.0,
         }
     }
 }
@@ -258,7 +282,7 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                 //           检查近N单是否全是卖单，或总和 < 阈值
                 // =============================================================
                 if !need_sell && cfg.sell_pressure_enabled {
-                    let prepare_trades = &watching_feed.prepareTrade;
+                    let prepare_trades = &feed.prepareTrade;
                     let lookback = cfg.sell_pressure_lookback.min(prepare_trades.len());
                     
                     if lookback >= cfg.sell_pressure_lookback {
@@ -267,11 +291,11 @@ impl PipelineHandler for PumpQtfySellProcesserDemo {
                         
                         for pt in prepare_trades.iter().take(lookback) {
                             // is_buy 为 false 表示卖单
-                            if pt.is_buy {
+                            if pt.trade_type== "buy" {
                                 all_sell = false;
                             }
                             // 卖单为负，买单为正
-                            let amt = if pt.is_buy { pt.buy_amount } else { -pt.buy_amount };
+                            let amt = if pt.trade_type== "buy" { pt.buy_amount } else { -pt.buy_amount };
                             total_sum += amt;
                         }
                         
