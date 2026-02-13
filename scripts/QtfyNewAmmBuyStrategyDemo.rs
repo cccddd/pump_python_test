@@ -155,6 +155,20 @@ pub struct BuyConditionsConfig {
     pub window_buy_sell_count_min_amount: f32,
     pub window_buy_sell_count_buy_range: (usize, usize),
     pub window_buy_sell_count_sell_range: (usize, usize),
+
+    // 条件20: 时间窗口内涨幅检查
+    // 在指定毫秒窗口内，当前价格相对于窗口起始价格的涨幅在范围内
+    pub window_rise_check_mode: CheckMode,
+    pub window_rise_window_ms: u64,
+    pub window_rise_min_pct: f64,
+    pub window_rise_max_pct: f64,
+
+    // 条件21: 时间窗口内跌幅检查
+    // 在指定毫秒窗口内，当前价格相对于窗口起始价格的跌幅在范围内
+    pub window_drop_check_mode: CheckMode,
+    pub window_drop_window_ms: u64,
+    pub window_drop_min_pct: f64,
+    pub window_drop_max_pct: f64,
 }
 
 impl Default for BuyConditionsConfig {
@@ -266,6 +280,18 @@ impl Default for BuyConditionsConfig {
             window_buy_sell_count_min_amount: 0.0,
             window_buy_sell_count_buy_range: (10, 100),
             window_buy_sell_count_sell_range: (0, 100),
+
+            // 条件20: 时间窗口内涨幅检查
+            window_rise_check_mode: CheckMode::Debug,
+            window_rise_window_ms: 1000,
+            window_rise_min_pct: 5.0,
+            window_rise_max_pct: 100.0,
+
+            // 条件21: 时间窗口内跌幅检查
+            window_drop_check_mode: CheckMode::Debug,
+            window_drop_window_ms: 1000,
+            window_drop_min_pct: 5.0,
+            window_drop_max_pct: 100.0,
         }
     }
 }
@@ -617,6 +643,30 @@ pub fn check_buy_conditions(
         }
     }
     
+    // 条件20: 时间窗口内涨幅检查 (仅 Online 模式过滤)
+    // Python: window_rise_pct = get_window_price_change_pct(...)
+    //         if not (min_pct <= rise_pct <= max_pct): return None
+    if cfg.window_rise_check_mode == CheckMode::Online {
+        if let Some(rise) = features.window_rise_pct {
+            if rise < cfg.window_rise_min_pct || rise > cfg.window_rise_max_pct {
+                reject_reason = format!("窗口内涨幅不在范围({:.2}%不在[{:.2}%,{:.2}%])", rise, cfg.window_rise_min_pct, cfg.window_rise_max_pct);
+                return (false, reject_reason);
+            }
+        }
+    }
+    
+    // 条件21: 时间窗口内跌幅检查 (仅 Online 模式过滤)
+    // Python: window_drop_pct = -change_pct (取正数表示跌幅)
+    //         if not (min_pct <= drop_pct <= max_pct): return None
+    if cfg.window_drop_check_mode == CheckMode::Online {
+        if let Some(drop) = features.window_drop_pct {
+            if drop < cfg.window_drop_min_pct || drop > cfg.window_drop_max_pct {
+                reject_reason = format!("窗口内跌幅不在范围({:.2}%不在[{:.2}%,{:.2}%])", drop, cfg.window_drop_min_pct, cfg.window_drop_max_pct);
+                return (false, reject_reason);
+            }
+        }
+    }
+    
     // 所有 Online 模式条件都满足
     (true, String::new())
 }
@@ -677,6 +727,10 @@ pub struct BuyFeatures {
     pub window_buy_count: Option<usize>,
     pub window_sell_count: Option<usize>,
     
+    // 窗口涨跌幅特征 (条件20/21)
+    pub window_rise_pct: Option<f64>,
+    pub window_drop_pct: Option<f64>,
+    
     // 规则匹配
     pub matched_group: Option<usize>,
     pub matched_avg_profit: Option<f64>,
@@ -686,7 +740,7 @@ pub struct BuyFeatures {
 impl BuyFeatures {
     pub fn to_log_string(&self) -> String {
         format!(
-            "mint={} | user={} | type={} | time_create={:.2}min | time_diff={:.0}ms | price={:.10} | nowsol={:.2} | trade_sol={:.4} | filtered_cnt={} | filtered_sum={:.4} | price_cv={} | time_cv={} | amount_cv={} | price_ratio={} | buy_cnt={} | sell_cnt={} | consec_buy={} | consec_sell={} | large_ratio={} | small_ratio={} | win_amt_sum={} | win_buy={} | win_sell={} | matched_group={} | avg_profit={} | buy_sol={:.4}",
+            "mint={} | user={} | type={} | time_create={:.2}min | time_diff={:.0}ms | price={:.10} | nowsol={:.2} | trade_sol={:.4} | filtered_cnt={} | filtered_sum={:.4} | price_cv={} | time_cv={} | amount_cv={} | price_ratio={} | buy_cnt={} | sell_cnt={} | consec_buy={} | consec_sell={} | large_ratio={} | small_ratio={} | win_amt_sum={} | win_buy={} | win_sell={} | win_rise={} | win_drop={} | matched_group={} | avg_profit={} | buy_sol={:.4}",
             self.mint,
             self.user,
             self.trade_type,
@@ -710,6 +764,8 @@ impl BuyFeatures {
             self.format_opt(self.window_amount_sum),
             self.window_buy_count.map(|v| v.to_string()).unwrap_or("-".into()),
             self.window_sell_count.map(|v| v.to_string()).unwrap_or("-".into()),
+            self.format_opt(self.window_rise_pct),
+            self.format_opt(self.window_drop_pct),
             self.matched_group.map(|g| g.to_string()).unwrap_or("-".into()),
             self.format_opt(self.matched_avg_profit),
             self.buy_sol,
@@ -958,6 +1014,61 @@ impl PipelineHandler for QtfyNewAmmBuyStrategyDemo {
                         if found_any {
                             features.window_buy_count = Some(win_buy);
                             features.window_sell_count = Some(win_sell);
+                        }
+                    }
+
+                    // 计算条件20/21: 时间窗口内涨跌幅
+                    // Python: get_window_price_change_pct - 找到窗口起始时间之前最近一笔交易的价格，计算涨跌幅
+                    // 条件20用 WINDOW_RISE_WINDOW_MS，条件21用 WINDOW_DROP_WINDOW_MS
+                    {
+                        let rise_window_ms = cfg.window_rise_window_ms;
+                        let drop_window_ms = cfg.window_drop_window_ms;
+                        let current_time = *data.trade_miltime();
+                        let current_price = *data.price();
+
+                        // 计算涨幅窗口
+                        if cfg.window_rise_check_mode != CheckMode::Off && current_price > 0.0 {
+                            let window_start = current_time.saturating_sub(rise_window_ms as u128);
+                            let mut ref_price: Option<f64> = None;
+                            for rt in recent_trades.iter().skip(1) {
+                                if rt.swap_time <= window_start {
+                                    ref_price = Some(rt.price as f64);
+                                    break;
+                                }
+                            }
+                            if let Some(rp) = ref_price {
+                                if rp > 0.0 {
+                                    let change_pct = (current_price - rp) / rp * 100.0;
+                                    features.window_rise_pct = Some(change_pct);
+                                    // 跌幅: 如果窗口相同，复用结果
+                                    if drop_window_ms == rise_window_ms && change_pct < 0.0 {
+                                        features.window_drop_pct = Some(-change_pct);
+                                    }
+                                }
+                            }
+                        }
+
+                        // 如果跌幅窗口与涨幅窗口不同，单独计算
+                        if cfg.window_drop_check_mode != CheckMode::Off 
+                            && current_price > 0.0 
+                            && (drop_window_ms != rise_window_ms || features.window_drop_pct.is_none()) 
+                        {
+                            let drop_start = current_time.saturating_sub(drop_window_ms as u128);
+                            let mut ref_price: Option<f64> = None;
+                            for rt in recent_trades.iter().skip(1) {
+                                if rt.swap_time <= drop_start {
+                                    ref_price = Some(rt.price as f64);
+                                    break;
+                                }
+                            }
+                            if let Some(rp) = ref_price {
+                                if rp > 0.0 {
+                                    let change_pct = (current_price - rp) / rp * 100.0;
+                                    if change_pct < 0.0 {
+                                        features.window_drop_pct = Some(-change_pct);
+                                    }
+                                }
+                            }
                         }
                     }
 
