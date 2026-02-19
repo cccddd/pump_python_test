@@ -12,32 +12,32 @@ STRATEGY_CONFIG = pump.STRATEGY_CONFIG
 BUY_CONDITIONS_CONFIG = {
     # 条件1: 距离创币时间（分钟）
     'TIME_FROM_CREATION_CHECK_MODE': 'debug',
-    'TIME_FROM_CREATION_MINUTES': 5,
-    'TIME_FROM_CREATION_RANGE': (5, 100000),
-    'TIME_FROM_CREATION_BUCKETS': [120, 150, 300, 400, 500],
+    'TIME_FROM_CREATION_MINUTES': 0,
+    'TIME_FROM_CREATION_RANGE': (0, 100),
+    'TIME_FROM_CREATION_BUCKETS': [0, 1, 2, 3, 5, 10, 15, 20, 30, 60, 120],
     # 条件2: 当前市值范围（nowsol字段）
-    'NOWSOL_CHECK_MODE': 'online',
-    'NOWSOL_RANGE': (100, 150),
+    'NOWSOL_CHECK_MODE': 'debug',
+    'NOWSOL_RANGE': (80, 250),
     'NOWSOL_BUCKETS': [0, 50, 100, 150, 200, 250, 300, 500, 1000],
 
     # 条件3: 当前交易单金额范围
-    'TRADE_AMOUNT_CHECK_MODE': 'online',
-    'TRADE_AMOUNT_RANGE': (3.0, 15.0),
+    'TRADE_AMOUNT_CHECK_MODE': 'debug',
+    'TRADE_AMOUNT_RANGE': (4.5, 16.0),
     'TRADE_AMOUNT_BUCKETS': [0, 1, 2, 3, 5, 7, 10, 15, 20],
 
     # 条件4: 当前交易单距离上一个交易单的时间差（毫秒）
     # 'off' - 禁用此条件
     # 'online' - 启用此条件，进行实际过滤
     # 'debug' - 调试模式，只收集统计数据，不过滤
-    'TIME_DIFF_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
+    'TIME_DIFF_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
     'TIME_DIFF_FROM_LAST_TRADE_RANGE': (0, 800),  # 时间差在 [2000, 10000] 毫秒范围内 - online模式使用
     'TIME_DIFF_BUCKETS': [0, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000],  # 时间差分桶边界（毫秒）
 
     # 条件5: 过滤后的前N笔交易总和范围
     'FILTERED_TRADES_CHECK_MODE': 'debug',
-    'FILTERED_TRADES_MIN_AMOUNT': 0.1,  # 过滤掉交易金额绝对值小于此值的交易
-    'FILTERED_TRADES_COUNT': 10,  # 取前N笔有效交易
-    'FILTERED_TRADES_SUM_RANGE': (-5.0, 20.0),  # 交易金额总和范围
+    'FILTERED_TRADES_MIN_AMOUNT': 0.05,  # 过滤掉交易金额绝对值小于此值的交易
+    'FILTERED_TRADES_COUNT': 20,  # 取前N笔有效交易
+    'FILTERED_TRADES_SUM_RANGE': (-200.0, 150.0),  # 交易金额总和范围
     'FILTERED_TRADES_SUM_BUCKETS': [-10, -5, 0, 5, 10, 20],
     
     # 条件6: 当前交易类型
@@ -124,7 +124,7 @@ BUY_CONDITIONS_CONFIG = {
     # 'off' - 禁用此条件
     # 'online' - 启用此条件，进行实际过滤
     # 'debug' - 调试模式，只收集统计数据，不过滤
-    'SMALL_TRADE_RATIO_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
+    'SMALL_TRADE_RATIO_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
     'SMALL_TRADE_RATIO_LOOKBACK': 30,  # 向前查看的交易数量
     'SMALL_TRADE_THRESHOLD': 0.4,  # 小单阈值(SOL)，交易金额绝对值 < 此值视为小单
     'SMALL_TRADE_RATIO_RANGE': (0.2, 1.2),  # 小单占比范围 - online模式使用
@@ -149,50 +149,34 @@ BUY_CONDITIONS_CONFIG = {
     'CONSECUTIVE_SELL_BUCKETS': [0, 1, 2, 3, 4, 5, 7, 10],  # 连续卖单数量分桶边界
     
     # 条件16: 近N秒内交易单数量
-    'RECENT_TRADE_COUNT_CHECK_MODE': 'debug',
+    'RECENT_TRADE_COUNT_CHECK_MODE': 'online',
     'RECENT_TRADE_COUNT_WINDOW_SECONDS': 1,
     'RECENT_TRADE_COUNT_RANGE': (3, 600),
     'RECENT_TRADE_COUNT_BUCKETS': [0, 3, 5, 10, 15, 20, 30, 50, 60, 70, 100],
 
     # 条件17: 近N单平均交易间隔时间
-    'AVG_TRADE_INTERVAL_CHECK_MODE': 'debug',
+    'AVG_TRADE_INTERVAL_CHECK_MODE': 'online',
     'AVG_TRADE_INTERVAL_LOOKBACK_COUNT': 15,
     'AVG_TRADE_INTERVAL_RANGE': (0, 500),
     'AVG_TRADE_INTERVAL_BUCKETS': [0, 200, 500, 1000, 2000, 3000, 4000, 5000, 7000, 10000, 30000],
 
     # 条件18: 时间窗口内大额交易总和检查
     # 在指定毫秒窗口内，过滤金额绝对值>=阈值的交易，计算这些交易金额总和（买为正、卖为负）
-    'WINDOW_AMOUNT_SUM_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
+    'WINDOW_AMOUNT_SUM_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
     'WINDOW_AMOUNT_SUM_WINDOW_MS': 600,  # 时间窗口（毫秒）
     'WINDOW_AMOUNT_SUM_MIN_AMOUNT': 0.0,  # 过滤金额阈值(SOL)，交易金额绝对值>=此值才纳入统计
-    'WINDOW_AMOUNT_SUM_RANGE': (-20.0, -5.0),  # 金额总和范围 - online模式使用
+    'WINDOW_AMOUNT_SUM_RANGE': (-5.0, 30.0),  # 金额总和范围 - online模式使用
     'WINDOW_AMOUNT_SUM_BUCKETS': [-20, -10, -5, 0, 5, 10, 20, 50],  # 金额总和分桶边界
 
     # 条件19: 时间窗口内大额交易买卖单数量检查
     # 在指定毫秒窗口内，过滤金额绝对值>=阈值的交易，分别统计买单和卖单数量
-    'WINDOW_BUY_SELL_COUNT_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
+    'WINDOW_BUY_SELL_COUNT_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
     'WINDOW_BUY_SELL_COUNT_WINDOW_MS': 30000,  # 时间窗口（毫秒）
     'WINDOW_BUY_SELL_COUNT_MIN_AMOUNT': 0.0,  # 过滤金额阈值(SOL)，交易金额绝对值>=此值才纳入统计
-    'WINDOW_BUY_SELL_COUNT_BUY_RANGE': (35, 2000),  # 买单数量范围 - online模式使用
+    'WINDOW_BUY_SELL_COUNT_BUY_RANGE': (10, 100),  # 买单数量范围 - online模式使用
     'WINDOW_BUY_SELL_COUNT_SELL_RANGE': (0, 100),  # 卖单数量范围 - online模式使用
     'WINDOW_BUY_COUNT_BUCKETS': [0, 1, 2, 3, 5, 7, 10, 15, 20,35],  # 买单数量分桶边界
     'WINDOW_SELL_COUNT_BUCKETS': [0, 1, 2, 3, 5, 7, 10, 15, 20,35],  # 卖单数量分桶边界
-
-    # 条件20: 时间窗口内涨幅检查
-    # 在指定毫秒窗口内，当前价格相对于窗口起始价格的涨幅 >= 阈值时通过
-    'WINDOW_RISE_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
-    'WINDOW_RISE_WINDOW_MS': 3000,  # 时间窗口（毫秒）
-    'WINDOW_RISE_MIN_PCT': 5.0,  # 最小涨幅百分比
-    'WINDOW_RISE_MAX_PCT': 100.0,  # 最大涨幅百分比
-    'WINDOW_RISE_BUCKETS': [-20,-10,-5, 0, 2, 5, 10, 15, 20, 30, 50],  # 涨幅分桶边界（百分比）
-
-    # 条件21: 时间窗口内跌幅检查
-    # 在指定毫秒窗口内，当前价格相对于窗口起始价格的跌幅 >= 阈值时通过
-    'WINDOW_DROP_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
-    'WINDOW_DROP_WINDOW_MS': 800,  # 时间窗口（毫秒）
-    'WINDOW_DROP_MIN_PCT': 10.0,  # 最小跌幅百分比（正数，如5.0表示跌了5%）
-    'WINDOW_DROP_MAX_PCT': 15.0,  # 最大跌幅百分比
-    'WINDOW_DROP_BUCKETS': [-5, 0, 2, 5, 10, 15, 20, 30, 50],  # 跌幅分桶边界（百分比）
 
     # Debug统计配置
     'DEBUG_EXCLUDE_HIGH_PROFIT_THRESHOLD': 1.0,  # 计算平均盈利率时排除盈利率 >= 此值(100%)的交易
@@ -205,20 +189,20 @@ SELL_CONDITIONS_CONFIG = {
 
     # 盈利率止盈
     'PROFIT_RATE_SELL_ENABLED': True,  # 是否启用盈利率止盈
-    'PROFIT_RATE_SELL_THRESHOLD': 0.10,  # 盈利率 >= 90% 时直接卖出
+    'PROFIT_RATE_SELL_THRESHOLD': 0.5,  # 盈利率 >= 90% 时直接卖出
 
     # 亏损止损
-    'LOSS_PERCENTAGE': 0.15,  # 亏损达到 60% 时触发止损检查
+    'LOSS_PERCENTAGE': 0.6,  # 亏损达到 60% 时触发止损检查
     'LOOKBACK_TRADES_FOR_MIN_PRICE': 3,  # 买入前N笔交易用于计算最小价格
     
     # 回撤止损
-    'RETRACEMENT_LOW_PROFIT': 0.05,  # 最大盈利 < 50% 时，回撤 5% 卖出
-    'RETRACEMENT_HIGH_PROFIT': 0.05,  # 最大盈利 >= 50% 时，回撤 10% 卖出
-    'HIGH_PROFIT_THRESHOLD': 0.15,  # 高盈利阈值 40%
+    'RETRACEMENT_LOW_PROFIT': 0.5,  # 最大盈利 < 50% 时，回撤 5% 卖出
+    'RETRACEMENT_HIGH_PROFIT': 0.5,  # 最大盈利 >= 50% 时，回撤 10% 卖出
+    'HIGH_PROFIT_THRESHOLD': 0.0,  # 高盈利阈值 40%
     'RETRACEMENT_MIN_COUNT': 0,  # 回撤区间内价格拐点向下次数 >= 此值才触发卖出
     'RETRACEMENT_INFLECTION_WINDOW': 5,  # 拐点检测窗口大小（取最近X个单子，中间位置是最大值则为拐点）
-    'RETRACEMENT_MIN_HOLD_MS': 1000,  # 回撤止损最小持有时间（毫秒），持有时间 >= 此值才触发回撤止损
-    'RETRACEMENT_MIN_PROFIT': 0.03,  # 回撤止损最小盈利阈值，当前盈利 >= 此值才触发回撤止损
+    'RETRACEMENT_MIN_HOLD_MS': 10000,  # 回撤止损最小持有时间（毫秒），持有时间 >= 此值才触发回撤止损
+    'RETRACEMENT_MIN_PROFIT': 0.08,  # 回撤止损最小盈利阈值，当前盈利 >= 此值才触发回撤止损
 
     # 近N单卖压检测
     'SELL_PRESSURE_ENABLED': False,  # 是否启用卖压检测
@@ -227,7 +211,7 @@ SELL_CONDITIONS_CONFIG = {
     'SELL_PRESSURE_ALL_SELL': False,  # 近N单全是卖单时卖出
 
     # 最大持有时间（秒）
-    'MAX_HOLD_TIME_SECONDS': 30,  # 持有超过 30 秒卖出
+    'MAX_HOLD_TIME_SECONDS': 3000,  # 持有超过 3000 秒卖出
 
     # 冷淡期卖出
     'QUIET_PERIOD_ENABLED': False,  # 是否启用冷淡期卖出
@@ -236,20 +220,20 @@ SELL_CONDITIONS_CONFIG = {
 
     # 短期暴涨卖出
     'SPIKE_SELL_ENABLED': True,  # 是否启用短期暴涨卖出
-    'SPIKE_LOOKBACK_MS': 1000,  # 回看时间窗口（毫秒），默认1秒
-    'SPIKE_THRESHOLD_PCT': 8.0,  # 涨幅阈值百分比，当前价格相对于1秒前价格涨幅 >= 此值时卖出
+    'SPIKE_LOOKBACK_MS': 800,  # 回看时间窗口（毫秒），默认1秒
+    'SPIKE_THRESHOLD_PCT': 15.0,  # 涨幅阈值百分比，当前价格相对于1秒前价格涨幅 >= 此值时卖出
     
     # 反弹卖出：买入后跌破X%后，从最低价反弹超过Y%时卖出
     'REBOUND_SELL_ENABLED': True,  # 是否启用反弹卖出
     'REBOUND_MIN_LOSS_PCT': 0.0,  # 买入后最低亏损阈值百分比（跌破此值后才启用反弹检测）
-    'REBOUND_MIN_PROFIT_PCT': 10.0,  # 从最低价反弹的百分比阈值（(当前价-最低价)/最低价 >= 此值时卖出）
+    'REBOUND_MIN_PROFIT_PCT': 25.0,  # 从最低价反弹的百分比阈值（(当前价-最低价)/最低价 >= 此值时卖出）
     
     # 活跃期高涨幅卖出：近N秒内交易单数 > X 且当前价格距近M单最低价涨幅 >= Y% 时卖出
     'ACTIVE_SPIKE_SELL_ENABLED': True,  # 是否启用
     'ACTIVE_SPIKE_WINDOW_SECONDS': 3,  # 时间窗口（秒）
     'ACTIVE_SPIKE_MIN_TRADE_COUNT': 20,  # 时间窗口内最少交易单数
     'ACTIVE_SPIKE_LOOKBACK_COUNT': 20,  # 计算最低价的近N单
-    'ACTIVE_SPIKE_MIN_RISE_PCT': 15.0,  # 距最低价的最小涨幅百分比
+    'ACTIVE_SPIKE_MIN_RISE_PCT': 35.0,  # 距最低价的最小涨幅百分比
     
     # 低活跃涨幅卖出：近N秒内交易单数 < X 且当前价格距近M单最低价涨幅 >= Y% 时卖出（冷淡期冲高防回落）
     'INACTIVE_SPIKE_SELL_ENABLED': False,  # 是否启用
@@ -704,41 +688,6 @@ def get_window_buy_sell_count(trade_data: List[Dict], current_index: int, window
     return buy_count, sell_count
 
 
-def get_window_price_change_pct(trade_data: List[Dict], current_index: int, window_ms: int) -> Optional[float]:
-    """在指定毫秒窗口内，计算当前价格相对于窗口起始价格的涨跌幅百分比
-    
-    返回正数表示涨幅，负数表示跌幅。
-    例如: 5.0 表示涨了5%，-3.0 表示跌了3%
-    """
-    if current_index <= 0 or current_index >= len(trade_data):
-        return None
-    try:
-        current_time = int(trade_data[current_index]['tradetime'])
-        current_price = float(trade_data[current_index].get('price', 0))
-    except (TypeError, ValueError, KeyError):
-        return None
-    if current_price <= 0:
-        return None
-    
-    window_start = current_time - window_ms
-    ref_price = None
-    
-    # 向前遍历，找到第一笔时间 <= window_start 的交易作为参考价格
-    for j in range(current_index - 1, -1, -1):
-        try:
-            t = int(trade_data[j]['tradetime'])
-            if t <= window_start:
-                ref_price = float(trade_data[j].get('price', 0))
-                break
-        except (TypeError, ValueError, KeyError):
-            continue
-    
-    if ref_price is None or ref_price <= 0:
-        return None
-    
-    return (current_price - ref_price) / ref_price * 100.0
-
-
 # Debug模式统计数据收集器
 class DebugStatsCollector:
     """收集debug模式下的统计数据"""
@@ -748,40 +697,12 @@ class DebugStatsCollector:
     
     def reset(self):
         """重置统计数据"""
-        # 条件1: 距离创币时间统计
-        self.time_from_creation_stats = {
-            'total': 0,
-            'time_from_creation_values': [],
-            'profitable_time_from_creation_values': [],
-        }
-        
-        # 条件2: 市值统计
-        self.nowsol_stats = {
-            'total': 0,
-            'nowsol_values': [],
-            'profitable_nowsol_values': [],
-        }
-        
-        # 条件3: 交易金额统计
-        self.trade_amount_stats = {
-            'total': 0,
-            'trade_amount_values': [],
-            'profitable_trade_amount_values': [],
-        }
-        
         # 条件4: 时间差检查统计
         self.time_diff_stats = {
             'total': 0,
-            'time_diff_values': [],
-            'profitable_time_diff_values': [],
-            'profit_rates_by_time_diff': {},
-        }
-        
-        # 条件5: 过滤后交易总和统计
-        self.filtered_trades_sum_stats = {
-            'total': 0,
-            'filtered_trades_sum_values': [],
-            'profitable_filtered_trades_sum_values': [],
+            'time_diff_values': [],  # 所有时间差值
+            'profitable_time_diff_values': [],  # 盈利交易的时间差值
+            'profit_rates_by_time_diff': {},  # 按时间差分桶记录盈利率 {bucket_name: [profit_rate, ...]}
         }
         
         # 条件7: 最大金额检查统计
@@ -791,71 +712,71 @@ class DebugStatsCollector:
             'not_max': 0,
             'profitable_is_max': 0,
             'profitable_not_max': 0,
-            'profit_rates_is_max': [],
-            'profit_rates_not_max': [],
+            'profit_rates_is_max': [],  # 是最大金额的盈利率列表
+            'profit_rates_not_max': [],  # 不是最大金额的盈利率列表
         }
         
         # 条件8: 波动率检查统计
         self.volatility_stats = {
             'total': 0,
-            'price_volatility_values': [],
-            'time_volatility_values': [],
-            'amount_volatility_values': [],
-            'profitable_price_volatility_values': [],
-            'profitable_time_volatility_values': [],
-            'profitable_amount_volatility_values': [],
-            'profit_rates_by_price_volatility': {},
-            'profit_rates_by_time_volatility': {},
-            'profit_rates_by_amount_volatility': {},
+            'price_volatility_values': [],  # 所有价格波动率值
+            'time_volatility_values': [],   # 所有时间波动率值
+            'amount_volatility_values': [],  # 所有金额波动率值
+            'profitable_price_volatility_values': [],  # 盈利交易的价格波动率值
+            'profitable_time_volatility_values': [],   # 盈利交易的时间波动率值
+            'profitable_amount_volatility_values': [],  # 盈利交易的金额波动率值
+            'profit_rates_by_price_volatility': {},  # 按价格波动率分桶记录盈利率
+            'profit_rates_by_time_volatility': {},   # 按时间波动率分桶记录盈利率
+            'profit_rates_by_amount_volatility': {},  # 按金额波动率分桶记录盈利率
         }
         
         # 条件9: 价格比例检查统计
         self.price_ratio_stats = {
             'total': 0,
-            'price_ratio_values': [],
-            'profitable_price_ratio_values': [],
+            'price_ratio_values': [],  # 所有价格比例值
+            'profitable_price_ratio_values': [],  # 盈利交易的价格比例值
         }
         
         # 条件10: 买单数量检查统计
         self.buy_count_stats = {
             'total': 0,
-            'buy_count_values': [],
-            'profitable_buy_count_values': [],
+            'buy_count_values': [],  # 所有买单数量值
+            'profitable_buy_count_values': [],  # 盈利交易的买单数量值
         }
         
         # 条件11: 卖单数量检查统计
         self.sell_count_stats = {
             'total': 0,
-            'sell_count_values': [],
-            'profitable_sell_count_values': [],
+            'sell_count_values': [],  # 所有卖单数量值
+            'profitable_sell_count_values': [],  # 盈利交易的卖单数量值
         }
         
         # 条件12: 大单占比检查统计
         self.large_trade_ratio_stats = {
             'total': 0,
-            'large_trade_ratio_values': [],
-            'profitable_large_trade_ratio_values': [],
+            'large_trade_ratio_values': [],  # 所有大单占比值
+            'profitable_large_trade_ratio_values': [],  # 盈利交易的大单占比值
         }
         
         # 条件13: 小单占比检查统计
         self.small_trade_ratio_stats = {
             'total': 0,
-            'small_trade_ratio_values': [],
-            'profitable_small_trade_ratio_values': [],
+            'small_trade_ratio_values': [],  # 所有小单占比值
+            'profitable_small_trade_ratio_values': [],  # 盈利交易的小单占比值
         }
         
         # 条件14: 连续大额买单检查统计
         self.consecutive_buy_stats = {
             'total': 0,
-            'consecutive_buy_values': [],
-            'profitable_consecutive_buy_values': [],
+            'consecutive_buy_values': [],  # 所有连续买单数量值
+            'profitable_consecutive_buy_values': [],  # 盈利交易的连续买单数量值
         }
         
         # 条件15: 连续大额卖单检查统计
         self.consecutive_sell_stats = {
             'total': 0,
-            'consecutive_sell_values': [],
-            'profitable_consecutive_sell_values': [],
+            'consecutive_sell_values': [],  # 所有连续卖单数量值
+            'profitable_consecutive_sell_values': [],  # 盈利交易的连续卖单数量值
         }
         
         # 条件16: 近N秒内交易单数量统计
@@ -891,20 +812,6 @@ class DebugStatsCollector:
             'profitable_window_sell_count_values': [],
         }
         
-        # 条件20: 时间窗口内涨幅统计
-        self.window_rise_stats = {
-            'total': 0,
-            'window_rise_values': [],
-            'profitable_window_rise_values': [],
-        }
-        
-        # 条件21: 时间窗口内跌幅统计
-        self.window_drop_stats = {
-            'total': 0,
-            'window_drop_values': [],
-            'profitable_window_drop_values': [],
-        }
-        
         # 交易记录（用于后续分析）
         self.trade_records = []
         
@@ -914,26 +821,6 @@ class DebugStatsCollector:
             'price_variance': None,
             'time_variance': None,
         }
-    
-    def record_time_from_creation_check(self, time_from_creation: float):
-        """记录距离创币时间检查结果"""
-        self.time_from_creation_stats['total'] += 1
-        self.time_from_creation_stats['time_from_creation_values'].append(time_from_creation)
-    
-    def record_nowsol_check(self, nowsol: float):
-        """记录市值检查结果"""
-        self.nowsol_stats['total'] += 1
-        self.nowsol_stats['nowsol_values'].append(nowsol)
-    
-    def record_trade_amount_check(self, trade_amount: float):
-        """记录交易金额检查结果"""
-        self.trade_amount_stats['total'] += 1
-        self.trade_amount_stats['trade_amount_values'].append(trade_amount)
-    
-    def record_filtered_trades_sum_check(self, filtered_sum: float):
-        """记录过滤后交易总和检查结果"""
-        self.filtered_trades_sum_stats['total'] += 1
-        self.filtered_trades_sum_stats['filtered_trades_sum_values'].append(filtered_sum)
     
     def record_max_amount_check(self, is_max: bool):
         """记录最大金额检查结果"""
@@ -1018,17 +905,7 @@ class DebugStatsCollector:
         self.window_sell_count_stats['total'] += 1
         self.window_sell_count_stats['window_sell_count_values'].append(sell_count)
     
-    def record_window_rise_check(self, rise_pct: float):
-        """记录时间窗口内涨幅检查结果"""
-        self.window_rise_stats['total'] += 1
-        self.window_rise_stats['window_rise_values'].append(rise_pct)
-    
-    def record_window_drop_check(self, drop_pct: float):
-        """记录时间窗口内跌幅检查结果"""
-        self.window_drop_stats['total'] += 1
-        self.window_drop_stats['window_drop_values'].append(drop_pct)
-    
-    def record_trade_result(self, is_profitable: bool, time_diff: Optional[int], is_max: Optional[bool], price_volatility: Optional[float], time_volatility: Optional[float], amount_volatility: Optional[float], price_ratio: Optional[float] = None, buy_count: Optional[int] = None, sell_count: Optional[int] = None, large_trade_ratio: Optional[float] = None, small_trade_ratio: Optional[float] = None, consecutive_buy: Optional[int] = None, consecutive_sell: Optional[int] = None, profit_rate: Optional[float] = None, recent_trade_count: Optional[int] = None, avg_trade_interval: Optional[float] = None, window_amount_sum: Optional[float] = None, window_buy_count: Optional[int] = None, window_sell_count: Optional[int] = None, window_rise_pct: Optional[float] = None, window_drop_pct: Optional[float] = None, time_from_creation: Optional[float] = None, nowsol: Optional[float] = None, trade_amount: Optional[float] = None, filtered_sum: Optional[float] = None):
+    def record_trade_result(self, is_profitable: bool, time_diff: Optional[int], is_max: Optional[bool], price_volatility: Optional[float], time_volatility: Optional[float], amount_volatility: Optional[float], price_ratio: Optional[float] = None, buy_count: Optional[int] = None, sell_count: Optional[int] = None, large_trade_ratio: Optional[float] = None, small_trade_ratio: Optional[float] = None, consecutive_buy: Optional[int] = None, consecutive_sell: Optional[int] = None, profit_rate: Optional[float] = None, recent_trade_count: Optional[int] = None, avg_trade_interval: Optional[float] = None, window_amount_sum: Optional[float] = None, window_buy_count: Optional[int] = None, window_sell_count: Optional[int] = None):
         """记录交易结果"""
         self.trade_records.append({
             'is_profitable': is_profitable,
@@ -1050,12 +927,6 @@ class DebugStatsCollector:
             'window_amount_sum': window_amount_sum,
             'window_buy_count': window_buy_count,
             'window_sell_count': window_sell_count,
-            'window_rise_pct': window_rise_pct,
-            'window_drop_pct': window_drop_pct,
-            'time_from_creation': time_from_creation,
-            'nowsol': nowsol,
-            'trade_amount': trade_amount,
-            'filtered_sum': filtered_sum,
         })
         
         if is_profitable:
@@ -1116,30 +987,6 @@ class DebugStatsCollector:
                 self.window_buy_count_stats['profitable_window_buy_count_values'].append(window_buy_count)
             if window_sell_count is not None:
                 self.window_sell_count_stats['profitable_window_sell_count_values'].append(window_sell_count)
-            
-            # 时间窗口内涨幅统计
-            if window_rise_pct is not None:
-                self.window_rise_stats['profitable_window_rise_values'].append(window_rise_pct)
-            
-            # 时间窗口内跌幅统计
-            if window_drop_pct is not None:
-                self.window_drop_stats['profitable_window_drop_values'].append(window_drop_pct)
-            
-            # 距离创币时间统计
-            if time_from_creation is not None:
-                self.time_from_creation_stats['profitable_time_from_creation_values'].append(time_from_creation)
-            
-            # 市值统计
-            if nowsol is not None:
-                self.nowsol_stats['profitable_nowsol_values'].append(nowsol)
-            
-            # 交易金额统计
-            if trade_amount is not None:
-                self.trade_amount_stats['profitable_trade_amount_values'].append(trade_amount)
-            
-            # 过滤后交易总和统计
-            if filtered_sum is not None:
-                self.filtered_trades_sum_stats['profitable_filtered_trades_sum_values'].append(filtered_sum)
     
     def get_bucket_distribution(self, values: List[float], buckets: List[float]) -> Dict[str, Dict]:
         """计算值在各分桶中的分布"""
@@ -1231,84 +1078,6 @@ class DebugStatsCollector:
         print(f"\n  Debug收集的交易数: {total_debug_trades}, 盈利: {overall_profitable}, 胜率: {overall_win_rate:.2f}%")
         print(f"  平均盈利率: {overall_avg_profit_rate:.2f}% (排除{excluded_count}笔盈利>={exclude_threshold*100:.0f}%的交易)")
         
-        # 条件1: 距离创币时间统计
-        if self.time_from_creation_stats['total'] > 0:
-            total = self.time_from_creation_stats['total']
-            profitable_count = len(self.time_from_creation_stats['profitable_time_from_creation_values'])
-            cond_profit_rates = [r.get('profit_rate', 0) for r in self.trade_records if r.get('time_from_creation') is not None and r.get('profit_rate') is not None and r.get('profit_rate') < exclude_threshold]
-            cond_avg = sum(cond_profit_rates) / len(cond_profit_rates) * 100 if cond_profit_rates else 0
-            
-            print("\n【条件1: 距离创币时间检查】")
-            print(f"  总交易数: {total}, 盈利: {profitable_count}, 盈利率: {profitable_count/total*100:.2f}%, 平均盈利率: {cond_avg:.2f}%")
-            
-            # 距离创币时间分布
-            if self.time_from_creation_stats['time_from_creation_values']:
-                print(f"\n  距离创币时间分布:")
-                time_from_creation_buckets = BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_BUCKETS']
-                time_from_creation_dist = self.get_bucket_distribution(self.time_from_creation_stats['time_from_creation_values'], time_from_creation_buckets)
-                
-                # 计算每个分桶的盈利数量和平均盈利率
-                profitable_time_from_creation_dist = self.get_bucket_distribution(self.time_from_creation_stats['profitable_time_from_creation_values'], time_from_creation_buckets) if self.time_from_creation_stats['profitable_time_from_creation_values'] else {}
-                avg_profit_rates = self.get_avg_profit_rate_by_bucket(self.time_from_creation_stats['time_from_creation_values'], time_from_creation_buckets, self.trade_records, 'time_from_creation')
-                
-                for bucket_name, stats in time_from_creation_dist.items():
-                    profitable_in_bucket = profitable_time_from_creation_dist.get(bucket_name, {'count': 0})['count']
-                    bucket_profit_rate = profitable_in_bucket / stats['count'] * 100 if stats['count'] > 0 else 0
-                    avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
-                    print(f"    {bucket_name}: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
-        
-        # 条件2: 市值统计
-        if self.nowsol_stats['total'] > 0:
-            total = self.nowsol_stats['total']
-            profitable_count = len(self.nowsol_stats['profitable_nowsol_values'])
-            cond_profit_rates = [r.get('profit_rate', 0) for r in self.trade_records if r.get('nowsol') is not None and r.get('profit_rate') is not None and r.get('profit_rate') < exclude_threshold]
-            cond_avg = sum(cond_profit_rates) / len(cond_profit_rates) * 100 if cond_profit_rates else 0
-            
-            print("\n【条件2: 市值检查】")
-            print(f"  总交易数: {total}, 盈利: {profitable_count}, 盈利率: {profitable_count/total*100:.2f}%, 平均盈利率: {cond_avg:.2f}%")
-            
-            # 市值分布
-            if self.nowsol_stats['nowsol_values']:
-                print(f"\n  市值分布:")
-                nowsol_buckets = BUY_CONDITIONS_CONFIG['NOWSOL_BUCKETS']
-                nowsol_dist = self.get_bucket_distribution(self.nowsol_stats['nowsol_values'], nowsol_buckets)
-                
-                # 计算每个分桶的盈利数量和平均盈利率
-                profitable_nowsol_dist = self.get_bucket_distribution(self.nowsol_stats['profitable_nowsol_values'], nowsol_buckets) if self.nowsol_stats['profitable_nowsol_values'] else {}
-                avg_profit_rates = self.get_avg_profit_rate_by_bucket(self.nowsol_stats['nowsol_values'], nowsol_buckets, self.trade_records, 'nowsol')
-                
-                for bucket_name, stats in nowsol_dist.items():
-                    profitable_in_bucket = profitable_nowsol_dist.get(bucket_name, {'count': 0})['count']
-                    bucket_profit_rate = profitable_in_bucket / stats['count'] * 100 if stats['count'] > 0 else 0
-                    avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
-                    print(f"    {bucket_name}: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
-        
-        # 条件3: 交易金额统计
-        if self.trade_amount_stats['total'] > 0:
-            total = self.trade_amount_stats['total']
-            profitable_count = len(self.trade_amount_stats['profitable_trade_amount_values'])
-            cond_profit_rates = [r.get('profit_rate', 0) for r in self.trade_records if r.get('trade_amount') is not None and r.get('profit_rate') is not None and r.get('profit_rate') < exclude_threshold]
-            cond_avg = sum(cond_profit_rates) / len(cond_profit_rates) * 100 if cond_profit_rates else 0
-            
-            print("\n【条件3: 交易金额检查】")
-            print(f"  总交易数: {total}, 盈利: {profitable_count}, 盈利率: {profitable_count/total*100:.2f}%, 平均盈利率: {cond_avg:.2f}%")
-            
-            # 交易金额分布
-            if self.trade_amount_stats['trade_amount_values']:
-                print(f"\n  交易金额分布:")
-                trade_amount_buckets = BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_BUCKETS']
-                trade_amount_dist = self.get_bucket_distribution(self.trade_amount_stats['trade_amount_values'], trade_amount_buckets)
-                
-                # 计算每个分桶的盈利数量和平均盈利率
-                profitable_trade_amount_dist = self.get_bucket_distribution(self.trade_amount_stats['profitable_trade_amount_values'], trade_amount_buckets) if self.trade_amount_stats['profitable_trade_amount_values'] else {}
-                avg_profit_rates = self.get_avg_profit_rate_by_bucket(self.trade_amount_stats['trade_amount_values'], trade_amount_buckets, self.trade_records, 'trade_amount')
-                
-                for bucket_name, stats in trade_amount_dist.items():
-                    profitable_in_bucket = profitable_trade_amount_dist.get(bucket_name, {'count': 0})['count']
-                    bucket_profit_rate = profitable_in_bucket / stats['count'] * 100 if stats['count'] > 0 else 0
-                    avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
-                    print(f"    {bucket_name}: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
-        
         # 条件4: 时间差检查统计
         if self.time_diff_stats['total'] > 0:
             total = self.time_diff_stats['total']
@@ -1332,32 +1101,6 @@ class DebugStatsCollector:
                 
                 for bucket_name, stats in time_diff_dist.items():
                     profitable_in_bucket = profitable_time_diff_dist.get(bucket_name, {'count': 0})['count']
-                    bucket_profit_rate = profitable_in_bucket / stats['count'] * 100 if stats['count'] > 0 else 0
-                    avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
-                    print(f"    {bucket_name}: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
-        
-        # 条件5: 过滤后交易总和统计
-        if self.filtered_trades_sum_stats['total'] > 0:
-            total = self.filtered_trades_sum_stats['total']
-            profitable_count = len(self.filtered_trades_sum_stats['profitable_filtered_trades_sum_values'])
-            cond_profit_rates = [r.get('profit_rate', 0) for r in self.trade_records if r.get('filtered_sum') is not None and r.get('profit_rate') is not None and r.get('profit_rate') < exclude_threshold]
-            cond_avg = sum(cond_profit_rates) / len(cond_profit_rates) * 100 if cond_profit_rates else 0
-            
-            print("\n【条件5: 过滤后交易总和检查】")
-            print(f"  总交易数: {total}, 盈利: {profitable_count}, 盈利率: {profitable_count/total*100:.2f}%, 平均盈利率: {cond_avg:.2f}%")
-            
-            # 过滤后交易总和分布
-            if self.filtered_trades_sum_stats['filtered_trades_sum_values']:
-                print(f"\n  过滤后交易总和分布:")
-                filtered_trades_sum_buckets = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_SUM_BUCKETS']
-                filtered_trades_sum_dist = self.get_bucket_distribution(self.filtered_trades_sum_stats['filtered_trades_sum_values'], filtered_trades_sum_buckets)
-                
-                # 计算每个分桶的盈利数量和平均盈利率
-                profitable_filtered_trades_sum_dist = self.get_bucket_distribution(self.filtered_trades_sum_stats['profitable_filtered_trades_sum_values'], filtered_trades_sum_buckets) if self.filtered_trades_sum_stats['profitable_filtered_trades_sum_values'] else {}
-                avg_profit_rates = self.get_avg_profit_rate_by_bucket(self.filtered_trades_sum_stats['filtered_trades_sum_values'], filtered_trades_sum_buckets, self.trade_records, 'filtered_sum')
-                
-                for bucket_name, stats in filtered_trades_sum_dist.items():
-                    profitable_in_bucket = profitable_filtered_trades_sum_dist.get(bucket_name, {'count': 0})['count']
                     bucket_profit_rate = profitable_in_bucket / stats['count'] * 100 if stats['count'] > 0 else 0
                     avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
                     print(f"    {bucket_name}: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
@@ -1753,54 +1496,6 @@ class DebugStatsCollector:
                         avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
                         print(f"    {bucket_name}: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
         
-        # 条件20: 时间窗口内涨幅统计
-        if self.window_rise_stats['total'] > 0:
-            total = self.window_rise_stats['total']
-            profitable_count = len(self.window_rise_stats['profitable_window_rise_values'])
-            cond_profit_rates = [r.get('profit_rate', 0) for r in self.trade_records if r.get('window_rise_pct') is not None and r.get('profit_rate') is not None and r.get('profit_rate') < exclude_threshold]
-            cond_avg = sum(cond_profit_rates) / len(cond_profit_rates) * 100 if cond_profit_rates else 0
-            
-            window_ms = BUY_CONDITIONS_CONFIG['WINDOW_RISE_WINDOW_MS']
-            print(f"\n【条件20: {window_ms}ms窗口内涨幅检查】")
-            print(f"  总交易数: {total}, 盈利: {profitable_count}, 盈利率: {profitable_count/total*100:.2f}%, 平均盈利率: {cond_avg:.2f}%")
-            
-            if self.window_rise_stats['window_rise_values']:
-                print(f"\n  窗口内涨幅(%)分布:")
-                wr_buckets = BUY_CONDITIONS_CONFIG['WINDOW_RISE_BUCKETS']
-                wr_dist = self.get_bucket_distribution(self.window_rise_stats['window_rise_values'], wr_buckets)
-                profitable_wr_dist = self.get_bucket_distribution(self.window_rise_stats['profitable_window_rise_values'], wr_buckets) if self.window_rise_stats['profitable_window_rise_values'] else {}
-                avg_profit_rates = self.get_avg_profit_rate_by_bucket(self.window_rise_stats['window_rise_values'], wr_buckets, self.trade_records, 'window_rise_pct')
-                
-                for bucket_name, stats in wr_dist.items():
-                    profitable_in_bucket = profitable_wr_dist.get(bucket_name, {'count': 0})['count']
-                    bucket_profit_rate = profitable_in_bucket / stats['count'] * 100 if stats['count'] > 0 else 0
-                    avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
-                    print(f"    {bucket_name}%: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
-        
-        # 条件21: 时间窗口内跌幅统计
-        if self.window_drop_stats['total'] > 0:
-            total = self.window_drop_stats['total']
-            profitable_count = len(self.window_drop_stats['profitable_window_drop_values'])
-            cond_profit_rates = [r.get('profit_rate', 0) for r in self.trade_records if r.get('window_drop_pct') is not None and r.get('profit_rate') is not None and r.get('profit_rate') < exclude_threshold]
-            cond_avg = sum(cond_profit_rates) / len(cond_profit_rates) * 100 if cond_profit_rates else 0
-            
-            window_ms = BUY_CONDITIONS_CONFIG['WINDOW_DROP_WINDOW_MS']
-            print(f"\n【条件21: {window_ms}ms窗口内跌幅检查】")
-            print(f"  总交易数: {total}, 盈利: {profitable_count}, 盈利率: {profitable_count/total*100:.2f}%, 平均盈利率: {cond_avg:.2f}%")
-            
-            if self.window_drop_stats['window_drop_values']:
-                print(f"\n  窗口内跌幅(%)分布:")
-                wd_buckets = BUY_CONDITIONS_CONFIG['WINDOW_DROP_BUCKETS']
-                wd_dist = self.get_bucket_distribution(self.window_drop_stats['window_drop_values'], wd_buckets)
-                profitable_wd_dist = self.get_bucket_distribution(self.window_drop_stats['profitable_window_drop_values'], wd_buckets) if self.window_drop_stats['profitable_window_drop_values'] else {}
-                avg_profit_rates = self.get_avg_profit_rate_by_bucket(self.window_drop_stats['window_drop_values'], wd_buckets, self.trade_records, 'window_drop_pct')
-                
-                for bucket_name, stats in wd_dist.items():
-                    profitable_in_bucket = profitable_wd_dist.get(bucket_name, {'count': 0})['count']
-                    bucket_profit_rate = profitable_in_bucket / stats['count'] * 100 if stats['count'] > 0 else 0
-                    avg_rate = avg_profit_rates.get(bucket_name, 0) * 100
-                    print(f"    {bucket_name}%: {stats['count']} ({stats['ratio']*100:.2f}%) | 盈利: {profitable_in_bucket} ({bucket_profit_rate:.2f}%) | 平均盈利率: {avg_rate:.2f}%")
-        
         print("=" * 60)
 
 
@@ -1854,26 +1549,19 @@ def variant_find_buy_signal(trade_data: List[Dict], start_index: int, creation_t
     # 条件1: 检查距离创币时间是否大于指定分钟数
     time_diff_seconds = (tradetime - creation_time) / 1000  # 转换为秒
     time_diff_minutes = time_diff_seconds / 60  # 转换为分钟
-    time_from_creation_mode = BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE']
-    if time_from_creation_mode == 'online':
-        time_creation_min, time_creation_max = BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_RANGE']
-        if not (time_creation_min <= time_diff_minutes <= time_creation_max):
-            return None
+    if time_diff_minutes < BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_MINUTES']:
+        return None
     
     # 条件2: 检查当前市值是否在指定范围内
-    nowsol_mode = BUY_CONDITIONS_CONFIG['NOWSOL_CHECK_MODE']
-    if nowsol_mode == 'online':
-        nowsol_min, nowsol_max = BUY_CONDITIONS_CONFIG['NOWSOL_RANGE']
-        if not (nowsol_min <= nowsol <= nowsol_max):
-            return None
+    nowsol_min, nowsol_max = BUY_CONDITIONS_CONFIG['NOWSOL_RANGE']
+    if not (nowsol_min <= nowsol <= nowsol_max):
+        return None
     
     # 条件3: 检查交易金额绝对值是否在指定范围内
-    trade_amount_mode = BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_CHECK_MODE']
+    amount_min, amount_max = BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_RANGE']
     abs_amount = abs(tradeamount)
-    if trade_amount_mode == 'online':
-        amount_min, amount_max = BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_RANGE']
-        if not (amount_min <= abs_amount <= amount_max):
-            return None
+    if not (amount_min <= abs_amount <= amount_max):
+        return None
     
     # 条件4: 检查当前交易单距离上一个交易单的时间差是否在指定范围内
     time_diff_mode = BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE']
@@ -1898,20 +1586,17 @@ def variant_find_buy_signal(trade_data: List[Dict], start_index: int, creation_t
         return None
     
     # 条件5: 检查过滤后的前N笔交易金额总和是否在指定范围内
-    filtered_trades_mode = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_CHECK_MODE']
-    if filtered_trades_mode in ('online', 'debug'):
-        min_amount = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_MIN_AMOUNT']
-        trades_count = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_COUNT']
-        sum_range = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_SUM_RANGE']
-        
-        filtered_sum = get_filtered_trades_sum(trade_data, start_index, min_amount, trades_count)
-        if filtered_sum is None:
-            return None  # 有效交易数量不足
-        
-        sum_min, sum_max = sum_range
-        if filtered_trades_mode == 'online' and not (sum_min <= filtered_sum <= sum_max):
-            return None
-        # debug模式：不在这里记录，统一在 wrapped_backtest_mint 中记录
+    min_amount = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_MIN_AMOUNT']
+    trades_count = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_COUNT']
+    sum_range = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_SUM_RANGE']
+    
+    filtered_sum = get_filtered_trades_sum(trade_data, start_index, min_amount, trades_count)
+    if filtered_sum is None:
+        return None  # 有效交易数量不足
+    
+    sum_min, sum_max = sum_range
+    if not (sum_min <= filtered_sum <= sum_max):
+        return None
     
     # 条件6: 检查当前交易类型
     trade_type = BUY_CONDITIONS_CONFIG['TRADE_TYPE']
@@ -2150,49 +1835,13 @@ def variant_find_buy_signal(trade_data: List[Dict], start_index: int, creation_t
                 if not (wsl_min <= window_sell_count <= wsl_max):
                     return None
     
-    # 条件20: 时间窗口内涨幅检查
-    window_rise_mode = BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_CHECK_MODE', 'off')
-    window_rise_pct = None
-    if window_rise_mode != 'off':
-        window_rise_pct = get_window_price_change_pct(
-            trade_data, start_index,
-            BUY_CONDITIONS_CONFIG['WINDOW_RISE_WINDOW_MS']
-        )
-        if window_rise_mode == 'online' and window_rise_pct is not None:
-            wr_min = BUY_CONDITIONS_CONFIG['WINDOW_RISE_MIN_PCT']
-            wr_max = BUY_CONDITIONS_CONFIG['WINDOW_RISE_MAX_PCT']
-            if not (wr_min <= window_rise_pct <= wr_max):
-                return None
-    
-    # 条件21: 时间窗口内跌幅检查
-    window_drop_mode = BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_CHECK_MODE', 'off')
-    window_drop_pct = None
-    if window_drop_mode != 'off':
-        # 复用条件20的结果（如果窗口相同），否则重新计算
-        drop_window_ms = BUY_CONDITIONS_CONFIG['WINDOW_DROP_WINDOW_MS']
-        rise_window_ms = BUY_CONDITIONS_CONFIG['WINDOW_RISE_WINDOW_MS']
-        if window_rise_pct is not None and drop_window_ms == rise_window_ms:
-            # 跌幅 = -涨幅（正数表示跌了多少，负数表示实际是涨的）
-            window_drop_pct = -window_rise_pct
-        else:
-            raw_pct = get_window_price_change_pct(trade_data, start_index, drop_window_ms)
-            if raw_pct is not None:
-                window_drop_pct = -raw_pct  # 转为跌幅视角：正数=跌，负数=涨
-        
-        if window_drop_mode == 'online' and window_drop_pct is not None:
-            wd_min = BUY_CONDITIONS_CONFIG['WINDOW_DROP_MIN_PCT']
-            wd_max = BUY_CONDITIONS_CONFIG['WINDOW_DROP_MAX_PCT']
-            if not (wd_min <= window_drop_pct <= wd_max):
-                return None
-    
     # 保存debug信息供后续记录交易结果使用
     has_debug = (max_amount_mode == 'debug' or 
                  price_volatility_mode == 'debug' or time_volatility_mode == 'debug' or amount_volatility_mode == 'debug' or 
                  price_ratio_mode == 'debug' or buy_count_mode == 'debug' or sell_count_mode == 'debug' or
                  large_ratio_mode == 'debug' or small_ratio_mode == 'debug' or
                  consecutive_buy_mode == 'debug' or consecutive_sell_mode == 'debug' or
-                 window_sum_mode == 'debug' or window_bs_mode == 'debug' or
-                 window_rise_mode == 'debug' or window_drop_mode == 'debug')
+                 window_sum_mode == 'debug' or window_bs_mode == 'debug')
     if has_debug:
         # 将当前信号的debug信息存储到全局变量
         debug_stats.current_signal_info = {
@@ -2206,8 +1855,6 @@ def variant_find_buy_signal(trade_data: List[Dict], start_index: int, creation_t
             'window_amount_sum': window_amount_sum,
             'window_buy_count': window_buy_count,
             'window_sell_count': window_sell_count,
-            'window_rise_pct': window_rise_pct,
-            'window_drop_pct': window_drop_pct,
         }
     
     return start_index
@@ -2669,11 +2316,7 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
     trades = original_backtest_mint(mint_name, mint_data)
     
     # 如果是debug模式，记录每笔交易的结果
-    has_debug_mode = (BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE'] == 'debug' or
-                      BUY_CONDITIONS_CONFIG['NOWSOL_CHECK_MODE'] == 'debug' or
-                      BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_CHECK_MODE'] == 'debug' or
-                      BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' or 
-                      BUY_CONDITIONS_CONFIG['FILTERED_TRADES_CHECK_MODE'] == 'debug' or
+    has_debug_mode = (BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' or 
                       BUY_CONDITIONS_CONFIG['MAX_AMOUNT_CHECK_MODE'] == 'debug' or 
                       BUY_CONDITIONS_CONFIG['PRICE_VOLATILITY_CHECK_MODE'] == 'debug' or
                       BUY_CONDITIONS_CONFIG['TIME_VOLATILITY_CHECK_MODE'] == 'debug' or
@@ -2688,9 +2331,7 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
                       BUY_CONDITIONS_CONFIG['RECENT_TRADE_COUNT_CHECK_MODE'] == 'debug' or
                       BUY_CONDITIONS_CONFIG['AVG_TRADE_INTERVAL_CHECK_MODE'] == 'debug' or
                       BUY_CONDITIONS_CONFIG.get('WINDOW_AMOUNT_SUM_CHECK_MODE', 'off') == 'debug' or
-                      BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_CHECK_MODE', 'off') == 'debug' or
-                      BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_CHECK_MODE', 'off') == 'debug' or
-                      BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_CHECK_MODE', 'off') == 'debug')
+                      BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_CHECK_MODE', 'off') == 'debug')
     
     if has_debug_mode:
         trade_data = mint_data.get('trade_data', [])
@@ -2728,10 +2369,6 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
             consecutive_sell = None
             recent_trade_count = None
             avg_trade_interval = None
-            time_from_creation = None
-            nowsol = None
-            trade_amount = None
-            filtered_sum = None
             
             # 重新计算时间差
             if BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] in ('debug', 'online') and buy_trigger_index > 0:
@@ -2825,65 +2462,7 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
                     BUY_CONDITIONS_CONFIG['WINDOW_BUY_SELL_COUNT_MIN_AMOUNT']
                 )
             
-            # 重新计算时间窗口内涨幅
-            window_rise_pct = None
-            if BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_CHECK_MODE', 'off') in ('debug', 'online'):
-                window_rise_pct = get_window_price_change_pct(
-                    trade_data, buy_trigger_index,
-                    BUY_CONDITIONS_CONFIG['WINDOW_RISE_WINDOW_MS']
-                )
-            
-            # 重新计算时间窗口内跌幅
-            window_drop_pct = None
-            if BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_CHECK_MODE', 'off') in ('debug', 'online'):
-                drop_window_ms = BUY_CONDITIONS_CONFIG['WINDOW_DROP_WINDOW_MS']
-                rise_window_ms = BUY_CONDITIONS_CONFIG['WINDOW_RISE_WINDOW_MS']
-                if window_rise_pct is not None and drop_window_ms == rise_window_ms:
-                    window_drop_pct = -window_rise_pct
-                else:
-                    raw_pct = get_window_price_change_pct(trade_data, buy_trigger_index, drop_window_ms)
-                    if raw_pct is not None:
-                        window_drop_pct = -raw_pct
-            
-            # 重新计算距离创币时间
-            if BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE'] in ('debug', 'online'):
-                try:
-                    creation_time = int(mint_data.get('creation_time', 0))
-                    cur_time = int(trade_data[buy_trigger_index].get('tradetime', 0))
-                    time_from_creation = (cur_time - creation_time) / 60000  # 转换为分钟
-                except (TypeError, ValueError):
-                    pass
-            
-            # 重新计算市值
-            if BUY_CONDITIONS_CONFIG['NOWSOL_CHECK_MODE'] in ('debug', 'online'):
-                try:
-                    nowsol = float(trade_data[buy_trigger_index].get('nowsol', 0))
-                except (TypeError, ValueError):
-                    pass
-            
-            # 重新计算交易金额
-            if BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_CHECK_MODE'] in ('debug', 'online'):
-                try:
-                    trade_amount = abs(float(trade_data[buy_trigger_index].get('tradeamount', 0)))
-                except (TypeError, ValueError):
-                    pass
-            
-            # 重新计算过滤后交易总和
-            if BUY_CONDITIONS_CONFIG['FILTERED_TRADES_CHECK_MODE'] in ('debug', 'online'):
-                try:
-                    min_amount = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_MIN_AMOUNT']
-                    trades_count = BUY_CONDITIONS_CONFIG['FILTERED_TRADES_COUNT']
-                    filtered_sum = get_filtered_trades_sum(trade_data, buy_trigger_index, min_amount, trades_count)
-                except (TypeError, ValueError):
-                    pass
-            
             # 统一记录各条件的debug统计（仅debug模式才记录分桶统计）
-            if BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE'] == 'debug' and time_from_creation is not None:
-                debug_stats.record_time_from_creation_check(time_from_creation)
-            if BUY_CONDITIONS_CONFIG['NOWSOL_CHECK_MODE'] == 'debug' and nowsol is not None:
-                debug_stats.record_nowsol_check(nowsol)
-            if BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_CHECK_MODE'] == 'debug' and trade_amount is not None:
-                debug_stats.record_trade_amount_check(trade_amount)
             if BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' and time_diff is not None:
                 debug_stats.record_time_diff_check(time_diff)
             if BUY_CONDITIONS_CONFIG['MAX_AMOUNT_CHECK_MODE'] == 'debug' and is_max_amount is not None:
@@ -2922,15 +2501,9 @@ def wrapped_backtest_mint(mint_name: str, mint_data: Dict) -> List[Dict]:
                     debug_stats.record_window_buy_count_check(window_buy_count)
                 if window_sell_count is not None:
                     debug_stats.record_window_sell_count_check(window_sell_count)
-            if BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_CHECK_MODE', 'off') == 'debug' and window_rise_pct is not None:
-                debug_stats.record_window_rise_check(window_rise_pct)
-            if BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_CHECK_MODE', 'off') == 'debug' and window_drop_pct is not None:
-                debug_stats.record_window_drop_check(window_drop_pct)
-            if BUY_CONDITIONS_CONFIG['FILTERED_TRADES_CHECK_MODE'] == 'debug' and filtered_sum is not None:
-                debug_stats.record_filtered_trades_sum_check(filtered_sum)
             
             # 统一记录交易结果（所有debug值一次性写入）
-            debug_stats.record_trade_result(is_profitable, time_diff, is_max_amount, price_volatility, time_volatility, amount_volatility, price_ratio, buy_count, sell_count, large_trade_ratio, small_trade_ratio, consecutive_buy, consecutive_sell, profit_rate, recent_trade_count, avg_trade_interval, window_amount_sum, window_buy_count, window_sell_count, window_rise_pct, window_drop_pct, time_from_creation, nowsol, trade_amount, filtered_sum)
+            debug_stats.record_trade_result(is_profitable, time_diff, is_max_amount, price_volatility, time_volatility, amount_volatility, price_ratio, buy_count, sell_count, large_trade_ratio, small_trade_ratio, consecutive_buy, consecutive_sell, profit_rate, recent_trade_count, avg_trade_interval, window_amount_sum, window_buy_count, window_sell_count)
     
     return trades
 
@@ -2941,26 +2514,19 @@ start = time.time()
 print('=' * 60)
 print('基本条件组合回测')
 print('=' * 60)
-mode_desc = {'off': '禁用', 'online': '启用', 'debug': '调试'}
 print(f"买入条件配置:")
-print(f"  1. 距离创币时间检查: {mode_desc.get(BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE'], BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE'])}")
-if BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE'] == 'online':
-    print(f"     范围: {BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_RANGE']} 分钟")
-print(f"  2. 市值范围(nowsol)检查: {mode_desc.get(BUY_CONDITIONS_CONFIG['NOWSOL_CHECK_MODE'], BUY_CONDITIONS_CONFIG['NOWSOL_CHECK_MODE'])}")
-if BUY_CONDITIONS_CONFIG['NOWSOL_CHECK_MODE'] == 'online':
-    print(f"     范围: {BUY_CONDITIONS_CONFIG['NOWSOL_RANGE']}")
-print(f"  3. 交易金额检查: {mode_desc.get(BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_CHECK_MODE'], BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_CHECK_MODE'])}")
-if BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_CHECK_MODE'] == 'online':
-    print(f"     范围: {BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_RANGE']}")
+print(f"  1. 距离创币时间 >= {BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_MINUTES']} 分钟")
+print(f"  2. 市值范围(nowsol): {BUY_CONDITIONS_CONFIG['NOWSOL_RANGE']}")
+print(f"  3. 交易金额范围: {BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_RANGE']}")
+mode_desc = {'off': '禁用', 'online': '启用', 'debug': '调试'}
 print(f"  4. 距上笔交易时间差: {mode_desc.get(BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'], BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'])}")
 if BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'online':
     print(f"     时间差范围: {BUY_CONDITIONS_CONFIG['TIME_DIFF_FROM_LAST_TRADE_RANGE']} 毫秒")
-print(f"  5. 过滤后前{BUY_CONDITIONS_CONFIG['FILTERED_TRADES_COUNT']}笔交易总和检查: {mode_desc.get(BUY_CONDITIONS_CONFIG['FILTERED_TRADES_CHECK_MODE'], BUY_CONDITIONS_CONFIG['FILTERED_TRADES_CHECK_MODE'])}")
-if BUY_CONDITIONS_CONFIG['FILTERED_TRADES_CHECK_MODE'] == 'online':
-    print(f"     总和范围: {BUY_CONDITIONS_CONFIG['FILTERED_TRADES_SUM_RANGE']}")
+print(f"  5. 过滤后前{BUY_CONDITIONS_CONFIG['FILTERED_TRADES_COUNT']}笔交易总和范围: {BUY_CONDITIONS_CONFIG['FILTERED_TRADES_SUM_RANGE']}")
 print(f"     (过滤金额阈值: {BUY_CONDITIONS_CONFIG['FILTERED_TRADES_MIN_AMOUNT']})")
 trade_type_desc = {'buy': '买入', 'sell': '卖出', 'both': '买入/卖出'}
 print(f"  6. 交易类型: {trade_type_desc.get(BUY_CONDITIONS_CONFIG['TRADE_TYPE'], BUY_CONDITIONS_CONFIG['TRADE_TYPE'])}")
+mode_desc = {'off': '禁用', 'online': '启用', 'debug': '调试'}
 print(f"  7. 当前交易金额是否为近{BUY_CONDITIONS_CONFIG['MAX_AMOUNT_LOOKBACK_COUNT']}单中最大: {mode_desc.get(BUY_CONDITIONS_CONFIG['MAX_AMOUNT_CHECK_MODE'], BUY_CONDITIONS_CONFIG['MAX_AMOUNT_CHECK_MODE'])}")
 print(f"  8. 近{BUY_CONDITIONS_CONFIG['VOLATILITY_LOOKBACK_COUNT']}单波动率检查:")
 print(f"     8a. 价格波动率: {mode_desc.get(BUY_CONDITIONS_CONFIG['PRICE_VOLATILITY_CHECK_MODE'], BUY_CONDITIONS_CONFIG['PRICE_VOLATILITY_CHECK_MODE'])}")
@@ -3005,12 +2571,6 @@ if BUY_CONDITIONS_CONFIG.get('WINDOW_AMOUNT_SUM_CHECK_MODE', 'off') == 'online':
 print(f"  19. {BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_WINDOW_MS', 5000)}ms窗口内>={BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_MIN_AMOUNT', 1.0)}SOL交易买卖数量检查: {mode_desc.get(BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_CHECK_MODE', 'off'), BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_CHECK_MODE', 'off'))}")
 if BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_CHECK_MODE', 'off') == 'online':
     print(f"     买单范围: {BUY_CONDITIONS_CONFIG['WINDOW_BUY_SELL_COUNT_BUY_RANGE']}, 卖单范围: {BUY_CONDITIONS_CONFIG['WINDOW_BUY_SELL_COUNT_SELL_RANGE']}")
-print(f"  20. {BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_WINDOW_MS', 1000)}ms窗口内涨幅检查: {mode_desc.get(BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_CHECK_MODE', 'off'), BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_CHECK_MODE', 'off'))}")
-if BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_CHECK_MODE', 'off') == 'online':
-    print(f"     涨幅范围: [{BUY_CONDITIONS_CONFIG['WINDOW_RISE_MIN_PCT']}%, {BUY_CONDITIONS_CONFIG['WINDOW_RISE_MAX_PCT']}%]")
-print(f"  21. {BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_WINDOW_MS', 1000)}ms窗口内跌幅检查: {mode_desc.get(BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_CHECK_MODE', 'off'), BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_CHECK_MODE', 'off'))}")
-if BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_CHECK_MODE', 'off') == 'online':
-    print(f"     跌幅范围: [{BUY_CONDITIONS_CONFIG['WINDOW_DROP_MIN_PCT']}%, {BUY_CONDITIONS_CONFIG['WINDOW_DROP_MAX_PCT']}%]")
 print(f"\n卖出条件配置:")
 print(f"  1. 市值止盈: nowsol >= {SELL_CONDITIONS_CONFIG['MAX_NOWSOL_SELL']} SOL")
 if SELL_CONDITIONS_CONFIG.get('PROFIT_RATE_SELL_ENABLED', False):
@@ -3036,17 +2596,13 @@ if SELL_CONDITIONS_CONFIG.get('SELL_RATIO_SELL_ENABLED', False):
 print('=' * 60)
 
 
-log_file = '/Users/xcold/Desktop/pumpamm_mint_info.log'
+log_file = '/Users/xcold/Desktop/js_log_mint_pumpamm_0217.log'
 
 
 pump.run_backtest(log_file)
 
 # 如果有debug模式的统计数据，打印摘要
-has_debug_mode = (BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE'] == 'debug' or 
-                  BUY_CONDITIONS_CONFIG['NOWSOL_CHECK_MODE'] == 'debug' or
-                  BUY_CONDITIONS_CONFIG['TRADE_AMOUNT_CHECK_MODE'] == 'debug' or
-                  BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' or 
-                  BUY_CONDITIONS_CONFIG['FILTERED_TRADES_CHECK_MODE'] == 'debug' or
+has_debug_mode = (BUY_CONDITIONS_CONFIG['TIME_DIFF_CHECK_MODE'] == 'debug' or 
                   BUY_CONDITIONS_CONFIG['MAX_AMOUNT_CHECK_MODE'] == 'debug' or 
                   BUY_CONDITIONS_CONFIG['PRICE_VOLATILITY_CHECK_MODE'] == 'debug' or
                   BUY_CONDITIONS_CONFIG['TIME_VOLATILITY_CHECK_MODE'] == 'debug' or
@@ -3061,9 +2617,7 @@ has_debug_mode = (BUY_CONDITIONS_CONFIG['TIME_FROM_CREATION_CHECK_MODE'] == 'deb
                   BUY_CONDITIONS_CONFIG['RECENT_TRADE_COUNT_CHECK_MODE'] == 'debug' or
                   BUY_CONDITIONS_CONFIG['AVG_TRADE_INTERVAL_CHECK_MODE'] == 'debug' or
                   BUY_CONDITIONS_CONFIG.get('WINDOW_AMOUNT_SUM_CHECK_MODE', 'off') == 'debug' or
-                  BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_CHECK_MODE', 'off') == 'debug' or
-                  BUY_CONDITIONS_CONFIG.get('WINDOW_RISE_CHECK_MODE', 'off') == 'debug' or
-                  BUY_CONDITIONS_CONFIG.get('WINDOW_DROP_CHECK_MODE', 'off') == 'debug')
+                  BUY_CONDITIONS_CONFIG.get('WINDOW_BUY_SELL_COUNT_CHECK_MODE', 'off') == 'debug')
 if has_debug_mode:
     debug_stats.print_summary()
 

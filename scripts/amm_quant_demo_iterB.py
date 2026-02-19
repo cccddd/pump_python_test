@@ -2596,7 +2596,7 @@ if SELL_CONDITIONS_CONFIG.get('SELL_RATIO_SELL_ENABLED', False):
 print('=' * 60)
 
 
-log_file = '/root/code/pumpamm_mint_info.log'
+log_file = '/Users/xcold/Desktop/js_log_mint_pumpamm_0217.log'
 
 
 pump.run_backtest(log_file)

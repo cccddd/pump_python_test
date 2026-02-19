@@ -22,7 +22,7 @@ BUY_CONDITIONS_CONFIG = {
 
     # 条件3: 当前交易单金额范围
     'TRADE_AMOUNT_CHECK_MODE': 'debug',
-    'TRADE_AMOUNT_RANGE': (4.5, 12.0),
+    'TRADE_AMOUNT_RANGE': (4.5, 16.0),
     'TRADE_AMOUNT_BUCKETS': [0, 1, 2, 3, 5, 7, 10, 15, 20],
 
     # 条件4: 当前交易单距离上一个交易单的时间差（毫秒）
@@ -170,7 +170,7 @@ BUY_CONDITIONS_CONFIG = {
 
     # 条件19: 时间窗口内大额交易买卖单数量检查
     # 在指定毫秒窗口内，过滤金额绝对值>=阈值的交易，分别统计买单和卖单数量
-    'WINDOW_BUY_SELL_COUNT_CHECK_MODE': 'online',  # 可选值: 'off', 'online', 'debug'
+    'WINDOW_BUY_SELL_COUNT_CHECK_MODE': 'debug',  # 可选值: 'off', 'online', 'debug'
     'WINDOW_BUY_SELL_COUNT_WINDOW_MS': 30000,  # 时间窗口（毫秒）
     'WINDOW_BUY_SELL_COUNT_MIN_AMOUNT': 0.0,  # 过滤金额阈值(SOL)，交易金额绝对值>=此值才纳入统计
     'WINDOW_BUY_SELL_COUNT_BUY_RANGE': (10, 100),  # 买单数量范围 - online模式使用
@@ -2596,7 +2596,7 @@ if SELL_CONDITIONS_CONFIG.get('SELL_RATIO_SELL_ENABLED', False):
 print('=' * 60)
 
 
-log_file = '/Users/xcold/Desktop/pumpamm_mint_info.log'
+log_file = '/Users/xcold/Desktop/js_log_mint_pumpamm_0217.log'
 
 
 pump.run_backtest(log_file)
